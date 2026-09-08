@@ -1,0 +1,12 @@
+# Runtime
+.venv/
+__pycache__/
+*.pyc
+*.log
+*.pid
+
+# RTFM local index
+.rtfm/
+
+# Local Claude Code state (permissions/settings are host-specific)
+.claude/settings.local.json

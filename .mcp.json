@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "rtfm": {
+      "command": "/workspace/venvs/rtfm/bin/python3.11",
+      "args": [
+        "-m",
+        "rtfm.mcp"
+      ],
+      "env": {
+        "RTFM_DB": ".rtfm/library.db"
+      }
+    }
+  }
+}

@@ -1,0 +1,22 @@
+# Paths denied by the viewer, relative to /workspace.
+# Kept in sync with the -v deny mounts in /workspace/start_copyparty.sh.
+# One entry per line; a trailing slash or not, both match the path and everything under it.
+.claude
+.pod-persist
+.cloudflared
+.config
+.erf.env
+_BACKUP
+_community_worker/transfer_ssh
+_osf_pod_link
+_secrets
+secrets
+deepseek_agent/.env
+melb_acquire/.env
+melb_acquire/google_places_key.env
+motiongen_tests/caches/huggingface/token
+services/copyparty/config
+start_copyparty.sh
+logs
+_incident_2026-09-04
+.osf_view_cache
