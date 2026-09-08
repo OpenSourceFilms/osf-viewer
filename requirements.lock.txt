@@ -4,6 +4,8 @@ inflate64==1.0.4
 multivolumefile==0.2.3
 mutagen==1.48.1
 numpy==2.5.2
+odfpy==1.4.1
+openpyxl==3.1.5
 pillow==12.3.0
 psutil==7.2.2
 py7zr==1.1.3
@@ -12,6 +14,8 @@ pybcj==1.0.8
 pycryptodomex==3.23.0
 pypdf==6.17.0
 pyppmd==1.3.1
+python-docx==1.2.0
 python-magic==0.4.27
+python-pptx==1.0.2
 safetensors==0.8.0
 texttable==1.7.0

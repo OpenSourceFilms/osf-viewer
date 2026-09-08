@@ -165,14 +165,36 @@ The venv lives at `/workspace/services/osf_viewer/.venv` (must stay under
 `requirements.lock.txt`:
 
 ```
-backports.zstd, brotli, inflate64, multivolumefile, mutagen, numpy, pillow,
-psutil, py7zr, pyarrow, pybcj, pycryptodomex, pypdf, pyppmd,
-python-magic, safetensors, texttable
+backports.zstd, brotli, inflate64, multivolumefile, mutagen, numpy, odfpy,
+openpyxl, pillow, psutil, py7zr, pyarrow, pybcj, pycryptodomex, pypdf,
+pyppmd, python-docx, python-magic, python-pptx, safetensors, texttable
 ```
 
 Plus these **system** packages (already present on this pod, not installed
 by this project — record them if reproducing on a fresh image):
 `ffmpeg`/`ffprobe` (4.2.7), `libmagic1`/`libmagic-mgc` (5.38), `file`.
+
+## System office dependencies (LibreOffice)
+
+Unlike everything above, LibreOffice is installed via `apt`, which writes
+to the container's ephemeral overlay (`/`) — it does **not** survive a pod
+rebuild, even though the Python side of office support
+(`office_extract.py` + the pinned libraries above) lives safely in the
+`/workspace` venv. If osf_viewer starts fine but every DOCX/XLSX/PPTX/ODT/
+ODS/ODP/legacy-Office/RTF file falls back to the generic binary report and
+`/preview.pdf` 404s for those formats specifically, this is almost
+certainly what's missing:
+
+```bash
+bash /workspace/services/osf_viewer/setup_system_office_deps.sh
+```
+
+Installs `libreoffice-writer libreoffice-calc libreoffice-impress`
+(`--no-install-recommends`; verified against `1:6.4.7-0ubuntu0.20.04.15` on
+Ubuntu 20.04/focal at time of writing) and functionally verifies it by
+actually converting a probe file to PDF, not just checking `soffice`
+exists on `$PATH`. No Java/JVM/Tika is installed — see the "why no Apache
+Tika / JVM" note above.
 
 **Known trap, already hit once**: this venv's `bin/python` is a symlink
 chain that ultimately resolves to a base-image interpreter
@@ -232,13 +254,103 @@ format:
 | safetensors | Tensor name/shape/dtype list, no tensor data read |
 | pickle-family (.pt/.ckpt/.pkl/...) | Refused deserialization; metadata-only report |
 | Directory | Sorted entry listing (name/kind/size/mtime), capped at 2000 |
+| Office (DOCX/XLSX/PPTX/ODT/ODS/ODP/DOC/XLS/PPT/RTF) | Real semantic extraction — see below; `/preview.pdf` via LibreOffice headless, cached |
 | Anything else / corrupt file of a known type | libmagic mime+description, size, mtime, sha256 (or fingerprint if >50MB), strings, bounded hex dump — never a bare error |
 
-**Categories with no semantic rendering at all** (by design, not a gap):
-office documents (`.docx`/`.xlsx`/`.pptx`) — no LibreOffice/Tika installed
-on this pod; they fall through to the generic binary report (libmagic will
-usually still identify them correctly as OOXML, and the strings scan often
-surfaces readable fragments of the document body, but there is no clean
-extracted-text pass). Add a LibreOffice-headless or Tika branch to
-`inspectors.py` if a real need for these arises — see "Adding a new
-handler" above.
+## Office / document formats (`office_extract.py`)
+
+Added 2026-09-08. Supported: **DOCX, XLSX, PPTX, ODT, ODS, ODP** natively,
+plus legacy **DOC, XLS, PPT, RTF** via a LibreOffice-conversion step first
+(see below). This is the *only* format family in this service whose
+extraction lives in its own module rather than `inspectors.py` directly —
+`inspectors.py` just dispatches by extension to `office_extract.get_text()`
+/ `get_preview_pdf()`, same pattern as every other kind.
+
+**Why no Apache Tika / JVM:** this pod has no Java runtime at all (checked:
+`java -version` → not found). Rather than install a JVM plus a ~70MB Tika
+jar, DOCX/XLSX/PPTX/ODT/ODS/ODP are extracted with pure-Python libraries
+(`python-docx`, `openpyxl`, `python-pptx`, `odfpy`) that give *better*
+structural fidelity than a raw Tika text dump anyway — real paragraph
+order, heading levels, intelligible tables, worksheet/slide boundaries,
+speaker notes — for a much smaller footprint. LibreOffice headless
+(already needed for `/preview.pdf`) covers everything Tika would have
+added beyond that. If a real need for Tika-specific extraction (e.g. a
+format none of these libraries open) arises later, add it as an additional
+fallback rung in `office_extract.py` rather than replacing this.
+
+**`/text` extraction:**
+
+- **DOCX/legacy DOC/RTF:** walks `document.element.body` in document order
+  (not `doc.paragraphs`/`doc.tables` separately, which lose interleaving) —
+  paragraphs render verbatim, headings render as `# `/`## ` by style level,
+  tables render as `name | value | notes`-style rows (capped at 200 rows).
+  Document metadata (title/author/created/modified) prefixed when present.
+- **XLSX/legacy XLS:** lists every worksheet name up front, then per sheet
+  a bounded, trimmed table (trailing empty cells stripped so short rows
+  don't pad out to the column cap). Read in `read_only` mode so this stays
+  cheap even for huge sheets — `iter_rows(max_row=200, max_col=50)` never
+  loads the full sheet, and a separate **global 20,000-cell cap across all
+  sheets** stops a many-sheet workbook from producing unbounded output.
+- **PPTX/legacy PPT:** slides in order, numbered, with every text-frame and
+  table shape's content, plus **speaker notes** where present, capped at
+  300 slides. Deck-level title/author metadata included when present.
+- **ODT/ODS/ODP:** same shape as DOCX/XLSX/PPTX via `odfpy`, walking
+  `doc.text`/`doc.spreadsheet`/`doc.presentation` element children
+  directly by qualified name (odfpy's element classes like `odf.text.P`
+  are factory *functions*, not real types — `isinstance()` against them
+  raises `TypeError`; compare `el.qname` to the real namespace tuple
+  instead, e.g. `(TEXTNS, "p")`). Slightly less structurally rich than the
+  DOCX/XLSX/PPTX path (closer to "extracted text with tables/headings/
+  notes recognized" than a full block-level walk), still far above the
+  generic binary fallback.
+- **Legacy DOC/XLS/PPT/RTF:** converted via `soffice --convert-to
+  docx|xlsx|pptx` first, then run through the *exact same* structural
+  extractor as the native format — not a separate, flatter code path — so
+  a `.doc` gets the same headings/tables fidelity a `.docx` does. If that
+  conversion itself fails, falls back one more rung to `soffice
+  --convert-to txt` (plain decoded text), and if *that* fails too, the
+  exception propagates up to `inspectors.get_text()`'s blanket handler and
+  demotes to the standard generic binary report — same "never a bare
+  error" guarantee as everything else in this service.
+
+**`/preview.pdf`:** every format above converts via `soffice --headless
+--convert-to pdf`, cached exactly like the existing image/video previews
+(`cache.get`/`cache.put` keyed by `sha256(relpath:size:mtime)` — see
+`cache.py`). First request for a given file pays the LibreOffice cost
+(~5s observed for a 3-slide PPTX fixture); every subsequent request for
+the same content is a cache hit (~30ms observed). `/preview.pdf` failure
+never affects `/text` for the same file — they're independent code paths.
+
+**Limits and safety:**
+
+- A hard **200MB cap** (`MAX_OFFICE_SRC_BYTES`) before *any* extraction is
+  attempted at all, and a tighter **150MB cap** (`MAX_CONVERT_SRC_BYTES`)
+  specifically before invoking `soffice` (conversion is the expensive
+  rung) — both degrade to the next fallback rather than attempting a slow
+  or memory-heavy operation.
+- Every `soffice` invocation runs with a **45-second hard timeout**
+  (`LO_TIMEOUT_S`), `subprocess.run(..., timeout=...)`, killed on expiry.
+- **Macro execution is disabled** via a seed LibreOffice profile
+  (`MacroSecurityLevel=3` in `registrymodifications.xcu` — "never run any
+  macro, signed or not"), copied fresh into an isolated temp directory
+  for *every* conversion (never shared/mutable profile state, and this
+  also means concurrent preview requests don't collide on LibreOffice's
+  single-instance-per-profile lock).
+- Every conversion's input/output/profile lives in its own
+  `tempfile.TemporaryDirectory(dir=CACHE_DIR)` — under
+  `/workspace/.osf_view_cache` (itself always denylisted, never
+  `/workspace` directly or system `/tmp`) — and is deleted immediately
+  after, success or failure, same pattern as the existing 7z-extraction
+  code in `inspectors.py`.
+- Output filenames are derived entirely from our own `input.<ext>` /
+  `out/input.<ext>` naming — never from anything inside the document.
+- **Known limitation, not attempted:** no network-level sandboxing of the
+  `soffice` subprocess itself (no container/namespace isolation beyond the
+  isolated profile+tempdir+macro-lockdown above) — a document containing a
+  remote reference (linked OLE object, remote image) could still cause an
+  outbound request during conversion. Full egress isolation would need
+  container-level sandboxing, judged disproportionate for this pass;
+  flagged here rather than silently assumed away.
+
+**Dependencies:** see "venv / dependencies" below for the pinned Python
+libraries, and "System office dependencies" for LibreOffice itself.

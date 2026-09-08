@@ -31,10 +31,19 @@ echo "Installing pinned dependencies from requirements.lock.txt..."
 echo "Verifying by function (not just import)..."
 .venv/bin/python -c "
 import magic, pypdf, py7zr, mutagen, safetensors, pyarrow
+import docx, openpyxl, pptx, odf.opendocument
 from PIL import Image
 assert magic.from_file('/bin/ls'), 'libmagic probe returned nothing'
 print('OK: all core deps import and libmagic functions')
 "
+
+echo ""
+echo "NOTE: this only restores the Python venv. Office/document support"
+echo "(office_extract.py) also needs LibreOffice on the SYSTEM (apt, survives"
+echo "in the venv but not the overlay across a pod rebuild) -- run"
+echo "setup_system_office_deps.sh too if 'soffice' is missing:"
+which soffice >/dev/null 2>&1 && echo "  soffice found: $(soffice --version)" \
+  || echo "  soffice NOT found -- run: bash $(dirname "${BASH_SOURCE[0]}")/setup_system_office_deps.sh"
 
 REAL_PY="$(readlink -f .venv/bin/python)"
 echo "venv python resolves to: $REAL_PY"
