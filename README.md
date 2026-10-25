@@ -35,3 +35,15 @@ existing file is guaranteed `200 text/plain`, never a bare error.
 See `DOCS.md` for the full URL mapping, the `/text` and `/preview.pdf`
 degradation contracts, and service management (`start.sh` / `stop.sh` /
 `restart.sh` / `status.sh`).
+
+## Symlink and denylist safety
+
+Directory listings and direct file requests share the same deny policy.
+Symlinks resolving into denied paths or outside the configured viewer root
+are not listed or served. Forbidden path components such as `.claude`
+remain denied even if they are symlinks to otherwise allowed content.
+
+The standalone standard-library tests in `tests/test_security_symlink_denials.py`
+run on GitHub Actions without a live viewer, credentials or model dependencies.
+Those checks cover source behavior only. A live deployment still requires
+separate reverse-proxy, effective-permission and directory-listing acceptance.

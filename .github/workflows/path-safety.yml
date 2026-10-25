@@ -1,0 +1,32 @@
+name: Viewer path safety (offline)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/path-safety.yml"
+      - "security.py"
+      - "tests/test_security_symlink_denials.py"
+  pull_request:
+    paths:
+      - ".github/workflows/path-safety.yml"
+      - "security.py"
+      - "tests/test_security_symlink_denials.py"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: viewer-path-safety-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  security-stdlib:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout public source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Pin Python 3.11
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+      - name: Test denied symlink and root escape boundaries
+        run: python -B -m unittest discover -s tests -p "test_security_symlink_denials.py" -v

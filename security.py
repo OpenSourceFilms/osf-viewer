@@ -48,7 +48,18 @@ def is_denied(real: Path, denylist: list[Path], root: Path) -> bool:
     than re-implementing a second denial check, so a listing can never show
     an entry name that a direct fetch of that same path would 403.
     """
-    return _is_denied(real, denylist, root)
+    # Directory listings pass lexical Path entries, while safe_resolve()
+    # checks canonical paths. Apply both checks: deny aliases named .claude,
+    # aliases whose target is denied, and symlinks escaping the viewer root.
+    root_real = root.resolve(strict=False)
+    if _is_denied(real, denylist, root_real):
+        return True
+    try:
+        target = real.resolve(strict=False)
+        target.relative_to(root_real)
+    except (OSError, RuntimeError, ValueError):
+        return True
+    return _is_denied(target, denylist, root_real)
 
 
 def _is_denied(real: Path, denylist: list[Path], root: Path) -> bool:
@@ -81,9 +92,16 @@ def safe_resolve(root: Path, relpath: str, denylist: list[Path]) -> Path:
 
     root_real = root.resolve()
     candidate = root_real.joinpath(*parts) if parts else root_real
+    # Reject a protected component even when it is itself a symlink to an
+    # otherwise accessible target; the path name is part of the policy.
+    if _is_denied(candidate, denylist, root_real):
+        raise PermissionError("denylisted")
     # resolve(strict=False): normalizes and follows symlinks for whatever
     # part of the path already exists, without requiring the leaf to exist.
-    real = candidate.resolve(strict=False)
+    try:
+        real = candidate.resolve(strict=False)
+    except (OSError, RuntimeError) as exc:
+        raise PermissionError("unresolvable symlink") from exc
 
     try:
         real.relative_to(root_real)
