@@ -100,7 +100,7 @@ writes beyond the cap. The updated pin is py7zr 1.1.4, whose 12 October
 These are per-member limits, **not a full CPU/time/memory sandbox** for
 hostile compressed archives. Opening archive headers precedes member
 selection; solid archives can process unrelated compressed streams.
-Concurrent request limits and real deployment acceptance remain separate.
+The request-worker admission cap described below reduces concurrent workload amplification, but real deployment acceptance remains separate.
 
 ## Directories
 
