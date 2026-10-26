@@ -95,16 +95,17 @@ class ViewerErrorRedactionTests(unittest.TestCase):
         self.assertNotIn("RuntimeError", sent[0][1])
 
     def test_archive_listing_error_does_not_return_exception(self):
-        cls, namespace, inspectors = load_handler_with_stub_inspectors()
+        cls, _, inspectors = load_handler_with_stub_inspectors()
         handler, sent = fake_handler(cls)
 
         def failure(*_args):
             raise RuntimeError(SECRET)
 
         inspectors.list_archive_members = failure
-        with mock.patch.dict(namespace, {"_denied_predicate": lambda: (lambda p: False)}):
-            # The function globals belong to app.py's runpy namespace.
-            # Inject a safe predicate so no deployed root or denylist is read.
+        with mock.patch.dict(cls._handle_hub.__globals__,
+                             {"_denied_predicate": lambda: (lambda p: False)}):
+            # Patch the handler function's actual globals (not runpy's copy)
+            # so the test never reads the deployed root or denylist.
             handler._handle_hub(None, "synthetic.zip", member_bytes=b"fake")
         self.assertEqual(sent[0][0], 200)
         self.assertIn("could not list archive members", sent[0][1])
