@@ -6,11 +6,17 @@ on:
       - ".github/workflows/path-safety.yml"
       - "security.py"
       - "tests/test_security_symlink_denials.py"
+      - "tests/test_fixture_package_safety.py"
+      - "tests/fixtures/**"
+      - "scripts/audit_fixture_packages.py"
   pull_request:
     paths:
       - ".github/workflows/path-safety.yml"
       - "security.py"
       - "tests/test_security_symlink_denials.py"
+      - "tests/test_fixture_package_safety.py"
+      - "tests/fixtures/**"
+      - "scripts/audit_fixture_packages.py"
   workflow_dispatch:
 permissions:
   contents: read
@@ -30,3 +36,5 @@ jobs:
           python-version: "3.11"
       - name: Test denied symlink and root escape boundaries
         run: python -B -m unittest discover -s tests -p "test_security_symlink_denials.py" -v
+      - name: Audit public Office fixture package boundaries
+        run: python -B -m unittest discover -s tests -p "test_fixture_package_safety.py" -v
