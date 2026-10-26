@@ -143,6 +143,10 @@ class ViewerHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             self._dispatch()
+        except security.DenylistUnavailable:
+            # Policy failure must be distinguishable from a missing file but
+            # must not disclose deployment paths or denylist contents.
+            self._send_text(503, "viewer access policy unavailable")
         except Exception as exc:  # noqa: BLE001 - last-resort HTTP error boundary
             # Neither a public HTTP response nor a potentially public pod log
             # should expose Python tracebacks, local paths or exception values.
@@ -154,6 +158,9 @@ class ViewerHandler(BaseHTTPRequestHandler):
                 pass
 
     def _dispatch(self):
+        # Check denylist before ANY route, including health. A missing
+        # policy must not cause a healthy response or expose public files.
+        dl = denylist()
         parsed = urlsplit(self.path)
         raw_path = unquote(parsed.path)
 
@@ -169,7 +176,6 @@ class ViewerHandler(BaseHTTPRequestHandler):
         relpath, mode = parsed_route
         archive_rel, member = split_archive_member(relpath)
 
-        dl = denylist()
         try:
             real = security.safe_resolve(ROOT, archive_rel, dl)
         except PermissionError as exc:
@@ -272,6 +278,8 @@ class ViewerHandler(BaseHTTPRequestHandler):
 
 
 def main():
+    # Refuse to listen on any port when mandatory access rules are absent.
+    denylist()
     Path("/workspace/.osf_view_cache").mkdir(parents=True, exist_ok=True)
     httpd = BoundedViewerServer((HOST, PORT), ViewerHandler,
                                 max_active=MAX_ACTIVE_REQUESTS,

@@ -121,6 +121,31 @@ Never fully read just to build a page:
   never tensor data (verified: a 3.9GB checkpoint returns in ~0.02s).
 - SQLite: `LIMIT 10` sample rows per table, not a full dump.
 
+## Fail-closed access policy
+
+The local `denylist.txt` is mandatory security configuration, not an optional
+convenience file. The Viewer **refuses to start** if this file is missing,
+unreadable, invalid or lacks any of its baseline OSF-private exclusions:
+`.pod-persist`, `.cloudflared`, `.config`, `_BACKUP`, `_secrets`,
+`secrets`, `logs` and `start_copyparty.sh`. The file may contain
+additional deny rules. Rules must remain root-relative and must not traverse
+outside the root through `..` or symlinks.
+
+If a previously running instance can no longer reload a valid policy,
+**all Viewer routes, including `/__view_health__`, respond HTTP 503**
+without exposing file paths or denylist contents. A successfully loaded
+policy is cached for up to 30 seconds, so policy removal does not
+immediately invalidate the last-known-good rules, but a subsequent reload
+must not silently return a reduced/empty denylist. Restoring a valid policy
+allows service recovery without relaxing the checks.
+
+[Offline regression tests](tests/test_denylist_fail_closed.py) use a synthetic
+filesystem to verify missing files, incomplete baselines, unsafe
+configuration lines, startup refusal, health failure and recovery. No
+live Copyparty behaviour, reverse-proxy access control or real credential
+paths are accepted by these tests. A 503 can indicate access-policy failure
+as well as the separate concurrency capacity limit described below.
+
 ## HTTP concurrency and overload behaviour
 
 The public Viewer listener is constructed with
