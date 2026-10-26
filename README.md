@@ -136,6 +136,17 @@ proxy configuration, filesystem privileges, race resistance or Copyparty
 raw-route access controls**. The separate Copyparty exposure described in
 [DOCS.md](DOCS.md) must be assessed at the actual ingress and raw routes.
 
+## Mandatory access-control configuration
+
+Viewer now **fails closed** when its `denylist.txt` is unavailable,
+malformed or missing mandatory private-directory exclusions. It will not
+bind the public-facing service without a valid policy; a running service
+whose policy reload fails returns HTTP 503, including on its health route.
+[Offline policy failure and recovery tests](tests/test_denylist_fail_closed.py)
+cover this contract. This is public-source hardening and does not establish
+that the current deployed service has been updated or that Copyparty's
+separate raw route implements equivalent rules.
+
 ## Symlink and denylist safety
 
 Directory listings and direct file requests share the same deny policy.
