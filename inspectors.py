@@ -631,7 +631,8 @@ def get_preview_pdf(path: Optional[Path], data: Optional[bytes], filename_hint: 
         if kind == "pdf":
             return _read_bytes(path, data)
         if kind == "image":
-            cached = _cache.get(relpath, size, mtime, ".pdf")
+            identity = _cache.source_fingerprint(path, data)
+            cached = _cache.get(relpath, size, mtime, ".pdf", identity)
             if cached:
                 return cached
             src = io.BytesIO(_read_bytes(path, data)) if data is not None else path
@@ -640,15 +641,17 @@ def get_preview_pdf(path: Optional[Path], data: Optional[bytes], filename_hint: 
                 buf = io.BytesIO()
                 rgb.save(buf, format="PDF")
                 out = buf.getvalue()
-            _cache.put(relpath, size, mtime, ".pdf", out)
+            if _cache.source_fingerprint(path, data) == identity:
+                _cache.put(relpath, size, mtime, ".pdf", out, identity)
             return out
         if kind == "video" and path is not None:
-            cached = _cache.get(relpath, size, mtime, ".pdf")
+            identity = _cache.source_fingerprint(path, data)
+            cached = _cache.get(relpath, size, mtime, ".pdf", identity)
             if cached:
                 return cached
             out = _video_contact_sheet(path)
-            if out:
-                _cache.put(relpath, size, mtime, ".pdf", out)
+            if out and _cache.source_fingerprint(path, data) == identity:
+                _cache.put(relpath, size, mtime, ".pdf", out, identity)
             return out
         if kind in OFFICE_KINDS:
             return office_extract.get_preview_pdf(path, data, filename_hint, kind, relpath, size, mtime)
