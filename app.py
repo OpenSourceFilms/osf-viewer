@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import html
 import json
+import os
 import shutil
 import sys
 import time
@@ -127,15 +128,17 @@ class ViewerHandler(BaseHTTPRequestHandler):
             self.wfile.write(data)
 
     def _stream_file(self, path: Path, content_type: str):
-        size = path.stat().st_size
-        self.send_response(200)
-        self.send_header("Content-Type", content_type)
-        self.send_header("Content-Length", str(size))
-        self.end_headers()
-        if self.command == "HEAD":
-            return
-        with open(path, "rb") as f:
-            shutil.copyfileobj(f, self.wfile, length=1024 * 1024)
+        # Open before sending headers so Content-Length describes the file
+        # descriptor actually streamed, rather than a separate path stat.
+        # At most 1 MiB is read into Python memory for any stream chunk.
+        with open(path, "rb") as stream:
+            size = os.fstat(stream.fileno()).st_size
+            self.send_response(200)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(size))
+            self.end_headers()
+            if self.command != "HEAD":
+                shutil.copyfileobj(stream, self.wfile, length=1024 * 1024)
 
     def do_HEAD(self):
         self.do_GET()
@@ -208,6 +211,13 @@ class ViewerHandler(BaseHTTPRequestHandler):
         self._stream_file(real, ctype)
 
     def _handle_preview_pdf(self, real: Path | None, data: bytes | None, relpath: str):
+        # Native on-disk PDFs are already the requested representation.
+        # Do not read the entire source into a bytes object merely to send it.
+        # Archive members remain bounded in-memory bytes, while generated
+        # previews still use the inspector's conversion/cache behaviour.
+        if real is not None and data is None and inspectors.is_native_pdf(real, relpath):
+            self._stream_file(real, "application/pdf")
+            return
         st = real.stat() if real else None
         size = st.st_size if st else (len(data) if data else 0)
         mtime = st.st_mtime if st else 0.0

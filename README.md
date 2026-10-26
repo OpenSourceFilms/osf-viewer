@@ -111,6 +111,22 @@ See `DOCS.md` for the full URL mapping, the `/text` and `/preview.pdf`
 degradation contracts, and service management (`start.sh` / `stop.sh` /
 `restart.sh` / `status.sh`).
 
+## Native PDF streaming
+
+The public `/__view__/.../preview.pdf` HTTP route now **streams native PDF
+files directly** from an opened file descriptor using bounded 1 MiB
+chunks, instead of loading the entire document into Python memory first.
+A native PDF `HEAD` request sends headers without reading the PDF bytes.
+This reuses the same implementation as raw-file streaming. Generated
+image/video/Office previews and already-bounded archive-member PDFs retain
+their existing handling. Five
+[offline regression checks](tests/test_native_pdf_streaming.py) cover
+native GET/HEAD, archive members, generated previews and the raw stream.
+
+This change improves the native-PDF response path only, not the memory
+and CPU limits for arbitrary PDF parsing or generated previews.
+It is not deployed to the running Viewer merely by merging the repository.
+
 ## Bounded request concurrency
 
 The HTTP listener uses [bounded worker admission](request_limits.py) to
