@@ -317,12 +317,15 @@ def get_preview_pdf(path: Optional[Path], data: Optional[bytes], filename_hint: 
     same contract as inspectors.get_preview_pdf()'s other branches.
     """
     try:
-        cached = _cache.get(relpath, size, mtime, ".pdf")
+        identity = _cache.source_fingerprint(path, data)
+        cached = _cache.get(relpath, size, mtime, ".pdf", identity)
         if cached:
             return cached
         out = _convert_with_soffice(path, data, kind, "pdf")
-        if out:
-            _cache.put(relpath, size, mtime, ".pdf", out)
+        # A source changed during a long conversion must not poison the
+        # cache entry for either its previous or its new identity.
+        if out and _cache.source_fingerprint(path, data) == identity:
+            _cache.put(relpath, size, mtime, ".pdf", out, identity)
         return out
     except Exception:  # noqa: BLE001
         return None

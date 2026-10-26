@@ -16,6 +16,10 @@ on:
       - "DEPENDENCY_LICENSES.md"
       - "tests/test_dependency_licence_inventory.py"
       - "app.py"
+      - "cache.py"
+      - "office_extract.py"
+      - "tests/test_office_extract.py"
+      - "tests/test_preview_cache_identity.py"
       - "tests/test_http_error_redaction.py"
       - "archive_memory.py"
       - "inspectors.py"
@@ -45,6 +49,10 @@ on:
       - "DEPENDENCY_LICENSES.md"
       - "tests/test_dependency_licence_inventory.py"
       - "app.py"
+      - "cache.py"
+      - "office_extract.py"
+      - "tests/test_office_extract.py"
+      - "tests/test_preview_cache_identity.py"
       - "tests/test_http_error_redaction.py"
       - "archive_memory.py"
       - "inspectors.py"
@@ -102,6 +110,8 @@ jobs:
         run: python -B -m unittest discover -s tests -p "test_denylist_fail_closed.py" -v
       - name: Keep inspector parse failures out of public text reports
         run: python -B -m unittest discover -s tests -p "test_inspector_error_redaction.py" -v
+      - name: Reject stale previews after same-size same-mtime source replacements
+        run: python -B -m unittest discover -s tests -p "test_preview_cache_identity.py" -v
       - name: Verify native PDF streaming never loads entire file
         run: python -B -m unittest discover -s tests -p "test_native_pdf_streaming.py" -v
       - name: Verify bounded-memory deny-safe HTML and text directory listings

@@ -266,7 +266,10 @@ class PreviewPdfCacheTests(unittest.TestCase):
         self.data = (FIXTURES / "sample.pptx").read_bytes()
         self.size = len(self.data)
         self.mtime = 1_700_000_000.0
-        self._key = _cache._key_path(self.relpath, self.size, self.mtime, ".pdf")
+        self._key = _cache._key_path(
+            self.relpath, self.size, self.mtime, ".pdf",
+            _cache.source_fingerprint(None, self.data),
+        )
         if self._key.exists():
             self._key.unlink()
 
