@@ -127,6 +127,29 @@ This change improves the native-PDF response path only, not the memory
 and CPU limits for arbitrary PDF parsing or generated previews.
 It is not deployed to the running Viewer merely by merging the repository.
 
+## Derived-preview cache source identity
+
+Previously, generated PDF previews were cached under **path + byte count +
+modification time**. A replaced image/video/Office source or an archive member
+could retain all three, causing the Viewer to show a stale PDF from a
+previous file. The cache now also keys on the source identity: disk-file
+device/inode/change-time metadata, or SHA-256 of extracted in-memory archive
+member bytes. Cache writes use unique same-directory temporary files so
+simultaneous requests do not collide on one fixed `.tmp` filename.
+
+A repeated request for unchanged input still reuses its cached preview;
+content replacement with an unchanged size and preserved mtime does not.
+If a disk source changes during conversion, its output is returned only to
+that request and **not cached under either source identity**. Six offline,
+synthetic regression tests cover file replacement, archive members, Office
+preview calls, ordinary cache hits and concurrent publication.
+
+This is cache invalidation, **not a cryptographic integrity guarantee** for
+disk content, a full defence against concurrent filesystem mutation, or an
+authentication mechanism. The Viewer still requires restrictive filesystem
+permissions and the existing denylist. The live Viewer is not changed merely
+by merging the public repository.
+
 ## Bounded directory listing memory
 
 HTML directory hubs and `/text` directory reports use the same
