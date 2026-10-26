@@ -179,8 +179,8 @@ def get_text(path: Optional[Path], data: Optional[bytes], filename_hint: str,
             note = ("Refusing to deserialize pickle-based format for safety "
                     "(no pickle.load / torch.load). Metadata only:\n\n")
             return note + _text_binary(path, data, filename_hint)
-    except Exception as exc:  # noqa: BLE001 - this is the safety net by design
-        return (f"[{kind} handler failed: {exc!r} -- falling back to generic report]\n\n"
+    except Exception:  # noqa: BLE001 - public fallbacks must not disclose exception values
+        return (f"[{kind} handler failed -- falling back to generic report]\n\n"
                 + _text_binary(path, data, filename_hint))
     return _text_binary(path, data, filename_hint)
 
@@ -203,8 +203,8 @@ def _text_directory(path: Path, is_denied: Optional[Callable[[Path], bool]] = No
             st = e.stat()
             kind = "dir " if e.is_dir() else "file"
             lines.append(f"{kind}  {st.st_size:>12}  {time.strftime('%Y-%m-%d %H:%M', time.localtime(st.st_mtime))}  {e.name}")
-        except OSError as exc:
-            lines.append(f"???   {'?':>12}  ?                 {e.name}  (stat failed: {exc})")
+        except OSError:
+            lines.append(f"???   {'?':>12}  ?                 {e.name}  (stat unavailable)")
     if truncated:
         lines.append(f"... truncated, {len(entries) - 2000} more entries not shown")
     return "\n".join(lines) + "\n"
@@ -236,8 +236,8 @@ def _text_pdf(path: Optional[Path], data: Optional[bytes]) -> str:
     for i, page in enumerate(reader.pages):
         try:
             t = page.extract_text() or ""
-        except Exception as exc:  # noqa: BLE001
-            t = f"[page {i+1}: text extraction failed: {exc!r}]"
+        except Exception:  # noqa: BLE001
+            t = f"[page {i+1}: text extraction failed]"
         if total + len(t) > MAX_PDF_TEXT_CHARS:
             t = t[: max(0, MAX_PDF_TEXT_CHARS - total)]
             truncated = True
@@ -298,8 +298,8 @@ def _text_audio(path: Optional[Path], data: Optional[bytes], filename_hint: str)
     src = path if path is not None else io.BytesIO(_read_bytes(path, data))
     try:
         f = mutagen.File(src)
-    except Exception as exc:  # noqa: BLE001
-        return f"[mutagen failed to parse audio metadata: {exc!r}]"
+    except Exception:  # noqa: BLE001
+        return "[mutagen failed to parse audio metadata]"
     if f is None:
         return "[mutagen could not identify this as a known audio format]"
     lines = [f"length: {getattr(f.info, 'length', '?')}s",
@@ -439,14 +439,14 @@ def _text_sqlite(path: Path) -> str:
             try:
                 cnt = con.execute(f"SELECT COUNT(*) FROM '{t}'").fetchone()[0]
                 lines.append(f"row count: {cnt}")
-            except sqlite3.OperationalError as exc:
-                lines.append(f"row count: unavailable ({exc})")
+            except sqlite3.OperationalError:
+                lines.append("row count: unavailable")
             try:
                 rows = con.execute(f"SELECT * FROM '{t}' LIMIT 10").fetchall()
                 for r in rows:
                     lines.append("  " + str(tuple(str(v)[:200] for v in r)))
-            except sqlite3.OperationalError as exc:
-                lines.append(f"  sample rows unavailable ({exc})")
+            except sqlite3.OperationalError:
+                lines.append("  sample rows unavailable")
             lines.append("")
     finally:
         con.close()
@@ -482,8 +482,8 @@ def _text_parquet(path: Path) -> str:
         lines.append(f"first {n} row(s) of row group 0:")
         for row in sample:
             lines.append("  " + json.dumps(row, default=str)[:500])
-    except Exception as exc:  # noqa: BLE001
-        lines.append(f"[could not read row group 0: {exc!r}]")
+    except Exception:  # noqa: BLE001
+        lines.append("[could not read row group 0]")
     return "\n".join(lines)
 
 
