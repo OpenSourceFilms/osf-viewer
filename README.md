@@ -27,6 +27,20 @@ not impose a new licence, and does not grant additional rights. The paths,
 tunnel rules and startup assumptions below describe an OSF-specific service,
 not a public deployment guarantee.
 
+## Third-party Python dependencies
+
+The [21 pinned dependencies](DEPENDENCY_LICENSES.md) have a dated inventory
+of publisher-declared licence metadata, checked against
+`requirements.lock.txt` by offline CI. Notably, **mutagen is GPL-2.0-or-later**
+and five archive/compression packages are **LGPL-2.1-or-later**. The
+`odfpy` metadata is ambiguous about alternative/combined licensing.
+
+This does **not** mean the Viewer code itself is GPL, LGPL or MIT. Assess
+whether any future redistributable package bundles those dependencies,
+preserve applicable licence/notice terms and resolve the separate
+[ownership and reuse issue](https://github.com/OpenSourceFilms/osf-viewer/issues/1).
+Package metadata alone is not wheel-level or legal clearance.
+
 ## Office fixture provenance and package checks
 
 The public `tests/fixtures/` directory contains synthetic Office test
