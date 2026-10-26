@@ -96,12 +96,22 @@ class InspectorRedactionTests(unittest.TestCase):
         self.assertIn("synthetic-file.txt", output)
 
     def test_sqlite_fallback_hides_query_errors(self):
+        class FakeCursor:
+            def __init__(self, rows):
+                self.rows = rows
+
+            def __iter__(self):
+                return iter(self.rows)
+
+            def fetchall(self):
+                return self.rows
+
         class FakeConnection:
             def execute(self, command):
                 if "sqlite_master" in command:
-                    return [("synthetic_table",)]
+                    return FakeCursor([("synthetic_table",)])
                 if "table_info" in command:
-                    return [(0, "field", "TEXT")]
+                    return FakeCursor([(0, "field", "TEXT")])
                 raise sqlite3.OperationalError(SECRET)
 
             def close(self):
