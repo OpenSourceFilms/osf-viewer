@@ -11,6 +11,22 @@ volume, so it survives pod rebuilds).
 **Runs on:** this RunPod pod, bound to `127.0.0.1:3930`. The only public
 entry point is a Cloudflare Tunnel path rule in front of it — see `DOCS.md`.
 
+## Source availability and reuse status
+
+**Publicly viewable does not currently mean open-source licensed.** This repository
+does not yet contain a repository-wide `LICENSE` or `COPYING` file. OSF is
+reviewing code authorship, third-party notices, and an appropriate reuse
+licence in [issue #1](https://github.com/OpenSourceFilms/osf-viewer/issues/1).
+Until an authorised licence is published, **do not assume that the MIT licence
+used by other OSF repositories applies here**, or that public visibility grants
+permission to redistribute, modify and republish this source outside the
+rights supplied by GitHub's terms and applicable law.
+
+This notice does not change the copyright ownership of any contribution, does
+not impose a new licence, and does not grant additional rights. The paths,
+tunnel rules and startup assumptions below describe an OSF-specific service,
+not a public deployment guarantee.
+
 ## Why
 
 Copyparty serves files on this volume as raw bytes. That's fine for a video
