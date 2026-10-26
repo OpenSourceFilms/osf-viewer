@@ -24,6 +24,8 @@ on:
       - "tests/test_tar_header_scan_bounds.py"
       - "request_limits.py"
       - "tests/test_worker_admission.py"
+      - "tests/test_denylist_fail_closed.py"
+      - "denylist.txt"
   pull_request:
     paths:
       - ".github/workflows/path-safety.yml"
@@ -47,6 +49,8 @@ on:
       - "tests/test_tar_header_scan_bounds.py"
       - "request_limits.py"
       - "tests/test_worker_admission.py"
+      - "tests/test_denylist_fail_closed.py"
+      - "denylist.txt"
   workflow_dispatch:
 permissions:
   contents: read
@@ -86,3 +90,5 @@ jobs:
         run: python -B -m unittest discover -s tests -p "test_tar_header_scan_bounds.py" -v
       - name: Exercise bounded worker admission via disposable loopback server
         run: python -B -m unittest discover -s tests -p "test_worker_admission.py" -v
+      - name: Refuse missing or incomplete Viewer access policies
+        run: python -B -m unittest discover -s tests -p "test_denylist_fail_closed.py" -v
