@@ -12,6 +12,19 @@ from pathlib import Path
 
 CACHE_DIRNAME = ".osf_view_cache"
 
+# A deployment policy missing any of these OSF-private roots is unsafe even
+# if the remaining denylist has valid syntax. Optional project-specific
+# entries may be added without changing this minimum baseline.
+REQUIRED_DENY_PATHS = frozenset({
+    ".pod-persist", ".cloudflared", ".config", "_BACKUP",
+    "_secrets", "secrets", "logs", "start_copyparty.sh",
+})
+
+
+class DenylistUnavailable(RuntimeError):
+    """Required Viewer access-control configuration is absent or invalid."""
+
+
 # Directory names denied WHEREVER they appear in the tree, not just at the
 # specific paths listed in denylist.txt. Found 2026-09-08: denylist.txt only
 # covered the top-level /workspace/.claude, but 18+ per-subproject .claude/
@@ -27,16 +40,45 @@ DENIED_BASENAMES = {".claude"}
 
 
 def load_denylist(root: Path, denylist_file: Path) -> list[Path]:
-    """Read denylist.txt (relative-to-root paths, # comments, blank lines ok)."""
-    entries: list[Path] = []
-    if denylist_file.exists():
-        for line in denylist_file.read_text(errors="replace").splitlines():
-            line = line.strip()
-            if not line or line.startswith("#"):
+    """Load the required OSF policy or fail closed.
+
+    A missing, truncated, unreadable or malformed policy MUST NOT silently
+    degrade to only the default `.claude` and cache exclusions. Explicit
+    paths are root-relative; absolute paths, traversal and symlink escapes
+    inside the configuration are rejected rather than ignored.
+    """
+    if not denylist_file.is_file():
+        raise DenylistUnavailable("viewer denylist file is unavailable")
+    try:
+        lines = denylist_file.read_text(encoding="utf-8").splitlines()
+        root_real = root.resolve()
+        entries: list[Path] = []
+        declared: set[str] = set()
+        for line in lines:
+            value = line.strip()
+            if not value or value.startswith("#"):
                 continue
-            entries.append((root / line).resolve())
-    # the cache dir is always denied, regardless of what denylist.txt says
-    entries.append((root / CACHE_DIRNAME).resolve())
+            value = value.rstrip("/")
+            parts = value.split("/")
+            if (not value or value.startswith("/") or "\\" in value
+                    or any(p in ("", ".", "..") for p in parts)):
+                raise DenylistUnavailable("viewer denylist contains an unsafe path")
+            candidate = root_real.joinpath(*parts).resolve(strict=False)
+            try:
+                candidate.relative_to(root_real)
+            except ValueError as exc:
+                raise DenylistUnavailable("viewer denylist escapes the root") from exc
+            entries.append(candidate)
+            declared.add(value)
+    except (OSError, UnicodeError, RuntimeError) as exc:
+        if isinstance(exc, DenylistUnavailable):
+            raise
+        raise DenylistUnavailable("viewer denylist could not be read") from exc
+
+    if not REQUIRED_DENY_PATHS.issubset(declared):
+        raise DenylistUnavailable("viewer denylist is missing mandatory exclusions")
+    # Cache is always denied even if the file does not name it.
+    entries.append((root_real / CACHE_DIRNAME).resolve())
     return entries
 
 
