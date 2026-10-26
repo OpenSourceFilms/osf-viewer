@@ -108,6 +108,8 @@ class InspectorRedactionTests(unittest.TestCase):
 
         class FakeConnection:
             def execute(self, command):
+                if command.startswith("PRAGMA busy_timeout"):
+                    return FakeCursor([])
                 if "sqlite_master" in command:
                     return FakeCursor([("synthetic_table",)])
                 if "table_info" in command:
