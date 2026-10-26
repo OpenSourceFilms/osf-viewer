@@ -330,6 +330,7 @@ def _text_archive(path: Optional[Path], data: Optional[bytes], filename_hint: st
     kind, arc = _archive_open(path, data, filename_hint)
     lines = [f"archive type: {kind}", ""]
     count = 0
+    extra_label = ""
     total_uncompressed = 0
     total_compressed = 0
     try:
@@ -341,6 +342,8 @@ def _text_archive(path: Optional[Path], data: Optional[bytes], filename_hint: st
                 total_compressed += zi.compress_size
                 count += 1
             more = len(infos) - MAX_ARCHIVE_LIST
+            if more > 0:
+                extra_label = f" (truncated, {more} more not shown)"
         elif kind == "7z":
             infos = [zi for zi in arc.list() if not getattr(zi, "is_directory", False)]
             for zi in infos[:MAX_ARCHIVE_LIST]:
@@ -349,19 +352,22 @@ def _text_archive(path: Optional[Path], data: Optional[bytes], filename_hint: st
                 total_uncompressed += size
                 count += 1
             more = len(infos) - MAX_ARCHIVE_LIST
+            if more > 0:
+                extra_label = f" (truncated, {more} more not shown)"
         else:  # tar
-            infos = arc.getmembers()
+            infos, truncated = archive_memory.scan_tar_headers(arc, MAX_ARCHIVE_LIST)
             for ti in infos[:MAX_ARCHIVE_LIST]:
                 lines.append(f"{ti.size:>12}  {'-':>12}  {ti.name}")
                 total_uncompressed += ti.size
                 count += 1
-            more = len(infos) - MAX_ARCHIVE_LIST
+            if truncated:
+                extra_label = " (truncated; additional entries not scanned)"
     finally:
         try:
             arc.close()
         except Exception:  # noqa: BLE001
             pass
-    header = [f"{count} member(s) listed" + (f" (truncated, {more} more not shown)" if more > 0 else ""),
+    header = [f"{count} member(s) listed" + extra_label,
               f"total uncompressed: {total_uncompressed} bytes",
               (f"total compressed: {total_compressed} bytes" if total_compressed else ""),
               "", f"{'size':>12}  {'compressed':>12}  name"]
@@ -382,7 +388,8 @@ def list_archive_members(path: Optional[Path], data: Optional[bytes], filename_h
                 if not getattr(zi, "is_directory", False):
                     out.append((zi.filename, getattr(zi, "uncompressed", 0) or 0))
         else:
-            for ti in arc.getmembers()[:MAX_ARCHIVE_LIST]:
+            infos, _ = archive_memory.scan_tar_headers(arc, MAX_ARCHIVE_LIST)
+            for ti in infos:
                 if ti.isfile():
                     out.append((ti.name, ti.size))
     finally:
@@ -406,7 +413,9 @@ def read_archive_member(path: Optional[Path], data: Optional[bytes], filename_hi
             # This removes the temporary-directory symlink-chain attack
             # surface, independently of py7zr's own path sanitisation.
             return archive_memory.read_7z_member(arc, member, MAX_MEMBER_EXTRACT)
-        return archive_memory.read_tar_member(arc, member, MAX_MEMBER_EXTRACT)
+        return archive_memory.read_tar_member(
+            arc, member, MAX_MEMBER_EXTRACT, MAX_ARCHIVE_LIST
+        )
     finally:
         try:
             arc.close()
