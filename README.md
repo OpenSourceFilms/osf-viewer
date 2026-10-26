@@ -48,6 +48,18 @@ artwork. The complete reuse-licence and fixture-provenance decision
 remains tracked in [issue #1](https://github.com/OpenSourceFilms/osf-viewer/issues/1).
 No fixture binaries have been changed by this audit.
 
+**Binary review checkpoint (27 October 2026):** the new
+[fixture inventory](docs/fixture-inventory.json) records the exact Git
+blob-object digest, byte count and unresolved-provenance status of **all 12**
+checked-in Office and corrupt-document fixtures. The stdlib-only
+[verification script](scripts/verify_fixture_manifest.py), tested in CI,
+fails when a binary is added, removed, replaced or symlinked without an
+explicit manifest update. Every asset is deliberately labelled
+`provenance_and_redistribution_rights_unverified`. A matching hash does
+**not** establish who created the document, clear embedded artwork or grant
+reuse permission. Changes to fixture bytes must be reviewed separately
+before public redistribution.
+
 ## Why
 
 Copyparty serves files on this volume as raw bytes. That's fine for a video
