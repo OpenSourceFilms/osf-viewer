@@ -399,25 +399,14 @@ def read_archive_member(path: Optional[Path], data: Optional[bytes], filename_hi
     kind, arc = _archive_open(path, data, filename_hint)
     try:
         if kind == "zip":
-            info = arc.getinfo(member)
-            if info.file_size > MAX_MEMBER_EXTRACT:
-                raise ValueError(f"member {member} is {info.file_size} bytes, over the "
-                                  f"{MAX_MEMBER_EXTRACT} byte extraction cap")
-            return arc.read(member)
+            return archive_memory.read_zip_member(arc, member, MAX_MEMBER_EXTRACT)
         if kind == "7z":
             # No filesystem writes: py7zr streams selected content into a
             # WriterFactory whose actual decompressed bytes are bounded.
             # This removes the temporary-directory symlink-chain attack
             # surface, independently of py7zr's own path sanitisation.
             return archive_memory.read_7z_member(arc, member, MAX_MEMBER_EXTRACT)
-        ti = arc.getmember(member)
-        if ti.size > MAX_MEMBER_EXTRACT:
-            raise ValueError(f"member {member} is {ti.size} bytes, over the "
-                              f"{MAX_MEMBER_EXTRACT} byte extraction cap")
-        f = arc.extractfile(ti)
-        if f is None:
-            raise KeyError(member)
-        return f.read()
+        return archive_memory.read_tar_member(arc, member, MAX_MEMBER_EXTRACT)
     finally:
         try:
             arc.close()
