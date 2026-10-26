@@ -77,6 +77,13 @@ security gap.
 Archive decompression protection: a single requested archive member
 over 200 MiB declared uncompressed size (`MAX_MEMBER_EXTRACT`) is refused;
 archive listings cap at 5000 enumerated members (`MAX_ARCHIVE_LIST`).
+For **TAR** archives, the cap now constrains header parsing itself: only
+the first 5,000 entries and one lookahead header are read for an archive
+listing, and direct member requests can only address regular files in
+that scanned prefix. TAR summaries report further entries as truncated
+without walking the rest of a potentially huge archive. ZIP/7z listing
+parsers may still read all header metadata internally; this change does
+not remove their CPU/memory exposure.
 The Viewer now also checks the **actual returned bytes** for ZIP and
 regular TAR members, rather than trusting only archive metadata. TAR
 symbolic links, hardlinks, devices and non-file member types are refused
