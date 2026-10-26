@@ -9,6 +9,9 @@ on:
       - "tests/test_fixture_package_safety.py"
       - "tests/fixtures/**"
       - "scripts/audit_fixture_packages.py"
+      - "docs/fixture-inventory.json"
+      - "scripts/verify_fixture_manifest.py"
+      - "tests/test_fixture_manifest_gate.py"
   pull_request:
     paths:
       - ".github/workflows/path-safety.yml"
@@ -17,6 +20,9 @@ on:
       - "tests/test_fixture_package_safety.py"
       - "tests/fixtures/**"
       - "scripts/audit_fixture_packages.py"
+      - "docs/fixture-inventory.json"
+      - "scripts/verify_fixture_manifest.py"
+      - "tests/test_fixture_manifest_gate.py"
   workflow_dispatch:
 permissions:
   contents: read
@@ -38,3 +44,7 @@ jobs:
         run: python -B -m unittest discover -s tests -p "test_security_symlink_denials.py" -v
       - name: Audit public Office fixture package boundaries
         run: python -B -m unittest discover -s tests -p "test_fixture_package_safety.py" -v
+      - name: Require review for new or modified published fixture binaries
+        run: python -B -m unittest discover -s tests -p "test_fixture_manifest_gate.py" -v
+      - name: Verify published binary inventory against Git blob digests
+        run: python -B scripts/verify_fixture_manifest.py
