@@ -27,6 +27,32 @@ PERSONAL_EMAIL = re.compile(r"(?<![\w.])[^\s<>@\"']+@(?:gmail|outlook|hotmail|ya
 RESTRICTED_PART = re.compile(r"(?:^|/)(?:vbaProject\.bin|activeX|embeddings|_xmlsignatures)(?:/|$)", re.I)
 
 
+XLINK_HREF = "{http://www.w3.org/1999/xlink}href"
+URI_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
+
+
+def _is_external_odf_reference(value: str) -> bool:
+    """Allow package-local paths and fragments, reject URLs and escapes."""
+    target = value.strip()
+    return bool(target and (
+        URI_SCHEME.match(target)
+        or target.startswith("/")
+        or chr(92) in target
+        or ".." in PurePosixPath(target).parts
+    ))
+
+
+def _xml_visible_values(root: ET.Element) -> str:
+    """Check text and attributes after XML entity/encoding decoding."""
+    text_values = list(root.itertext())
+    # Preserve adjacent-element boundaries for standalone e-mails, while
+    # retaining a joined view to detect values split across nested markup.
+    return "\n".join(
+        text_values + ["".join(text_values)] +
+        [value for element in root.iter() for value in element.attrib.values()]
+    )
+
+
 def scan_package(path: Path) -> dict:
     issues: list[str] = []
     previews: list[str] = []
@@ -68,15 +94,26 @@ def scan_package(path: Path) -> dict:
                                 issues.append("external_relationship")
                     except (ET.ParseError, RuntimeError, OSError, ValueError):
                         issues.append("invalid_relationship_xml")
-                if name in ("docProps/core.xml", "meta.xml"):
+                metadata_part = name in ("docProps/core.xml", "meta.xml")
+                odf_xml = path.suffix.lower() in (".odt", ".ods", ".odp") and name.endswith(".xml")
+                if metadata_part or odf_xml:
                     try:
-                        meta = archive.read(info).decode("utf-8", errors="replace")
-                        if PRIVATE_PATH.search(meta):
-                            issues.append("personal_file_path_metadata")
-                        if PERSONAL_EMAIL.search(meta):
-                            issues.append("personal_email_metadata")
-                    except (OSError, ValueError, RuntimeError):
-                        issues.append("unreadable_package_metadata")
+                        # Parse bytes directly to respect declared XML encodings
+                        # and expand character references before privacy checks.
+                        root = ET.fromstring(archive.read(info))
+                        if metadata_part:
+                            meta = _xml_visible_values(root)
+                            if PRIVATE_PATH.search(meta):
+                                issues.append("personal_file_path_metadata")
+                            if PERSONAL_EMAIL.search(meta):
+                                issues.append("personal_email_metadata")
+                        if odf_xml:
+                            for element in root.iter():
+                                href = element.attrib.get(XLINK_HREF)
+                                if href is not None and _is_external_odf_reference(href):
+                                    issues.append("external_odf_reference")
+                    except (ET.ParseError, OSError, ValueError, RuntimeError):
+                        issues.append("invalid_package_xml")
     except (zipfile.BadZipFile, OSError):
         issues.append("bad_archive")
     return {

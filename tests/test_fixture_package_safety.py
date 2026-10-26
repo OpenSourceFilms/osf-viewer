@@ -44,6 +44,53 @@ class FixturePackageSafetyTests(unittest.TestCase):
                 z.writestr("word/_rels/document.xml.rels", xml)
             self.assertIn("external_relationship", scan(path)["issues"])
 
+    def test_rejects_odf_external_xlink_references(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for reference in ("https://example.test/track.png", "file:///etc/passwd",
+                              "//example.test/image", "../outside.png"):
+                with self.subTest(reference=reference):
+                    path = Path(tmp) / "external.odt"
+                    content = (f'<root xmlns:xlink="http://www.w3.org/1999/xlink">'
+                               f'<image xlink:href="{reference}"/></root>').encode("utf-8")
+                    with zipfile.ZipFile(path, "w") as z:
+                        z.writestr("content.xml", content)
+                    self.assertIn("external_odf_reference", scan(path)["issues"])
+
+    def test_odf_package_local_xlink_reference_is_allowed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "local.odt"
+            content = ('<root xmlns:xlink="http://www.w3.org/1999/xlink">'
+                       '<image xlink:href="Pictures/local.png"/>'
+                       '<image xlink:href="#local"/>'
+                       '</root>')
+            with zipfile.ZipFile(path, "w") as z:
+                z.writestr("content.xml", content)
+            self.assertEqual(scan(path)["issues"], [])
+
+    def test_rejects_xml_decoded_email_metadata(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "encoded.odt"
+            with zipfile.ZipFile(path, "w") as z:
+                z.writestr("meta.xml", '<meta><creator>alice&#64;gmail.com</creator></meta>')
+            self.assertIn("personal_email_metadata", scan(path)["issues"])
+
+    def test_adjacent_metadata_elements_preserve_email_boundary(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "adjacent.odt"
+            with zipfile.ZipFile(path, "w") as z:
+                z.writestr("meta.xml", "<meta><creator>alice@gmail.com</creator>"
+                                       "<date>2026-10-26</date></meta>")
+            self.assertIn("personal_email_metadata", scan(path)["issues"])
+
+    def test_rejects_utf16_encoded_email_metadata(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "utf16.odt"
+            xml = ('<?xml version="1.0" encoding="UTF-16"?>'
+                   '<meta><creator>alice@gmail.com</creator></meta>').encode("utf-16")
+            with zipfile.ZipFile(path, "w") as z:
+                z.writestr("meta.xml", xml)
+            self.assertIn("personal_email_metadata", scan(path)["issues"])
+
     def test_rejects_package_member_escape(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "escape.docx"
