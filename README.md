@@ -111,6 +111,15 @@ See `DOCS.md` for the full URL mapping, the `/text` and `/preview.pdf`
 degradation contracts, and service management (`start.sh` / `stop.sh` /
 `restart.sh` / `status.sh`).
 
+## Bounded request concurrency
+
+The HTTP listener uses [bounded worker admission](request_limits.py) to
+restrict simultaneous handlers to two by default, reject excess requests
+with HTTP 503 and a short `Retry-After`, and time out idle sockets.
+An [offline loopback regression suite](tests/test_worker_admission.py)
+checks rejection and recovery. This does not bound resources used by any
+single archive decoder or establish live deployment acceptance.
+
 ## Public HTTP error handling
 
 The Viewer returns a generic HTTP 500 message if a request triggers an

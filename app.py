@@ -22,18 +22,23 @@ import json
 import shutil
 import sys
 import time
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import quote, unquote, urlsplit
 
 sys.path.insert(0, str(Path(__file__).parent))
 import security
 import inspectors
+from request_limits import BoundedViewerServer
 
 ROOT = Path("/workspace")
 DENYLIST_FILE = Path("/workspace/services/osf_viewer/denylist.txt")
 HOST = "127.0.0.1"
 PORT = 3930
+# Two simultaneous expensive requests at most; excess receive 503.
+# A socket I/O timeout prevents idle clients holding worker slots indefinitely.
+MAX_ACTIVE_REQUESTS = 2
+SOCKET_TIMEOUT_SECONDS = 30.0
 
 _DENYLIST_CACHE: list[Path] = []
 _DENYLIST_LOADED_AT = 0.0
@@ -268,8 +273,11 @@ class ViewerHandler(BaseHTTPRequestHandler):
 
 def main():
     Path("/workspace/.osf_view_cache").mkdir(parents=True, exist_ok=True)
-    httpd = ThreadingHTTPServer((HOST, PORT), ViewerHandler)
-    print(f"osf_viewer listening on {HOST}:{PORT}", flush=True)
+    httpd = BoundedViewerServer((HOST, PORT), ViewerHandler,
+                                max_active=MAX_ACTIVE_REQUESTS,
+                                socket_timeout_s=SOCKET_TIMEOUT_SECONDS)
+    print(f"osf_viewer listening on {HOST}:{PORT} with up to "
+          f"{MAX_ACTIVE_REQUESTS} active request workers", flush=True)
     httpd.serve_forever()
 
 
