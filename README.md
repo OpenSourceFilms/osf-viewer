@@ -120,6 +120,17 @@ An [offline loopback regression suite](tests/test_worker_admission.py)
 checks rejection and recovery. This does not bound resources used by any
 single archive decoder or establish live deployment acceptance.
 
+## Text-report exception redaction
+
+The plain-text report and embedded HTML preview never intentionally expose
+raw Python exception values. Generic fallback markers replace error details
+from the main parser, per-page PDF extraction, audio metadata, SQLite row
+queries, Parquet row groups and directory stat failures. The report still
+includes source-file contents where the requested path is legitimately
+accessible. Seven standard-library-only
+[error-redaction regressions](tests/test_inspector_error_redaction.py)
+exercise the actual inspector function bodies and run in public CI.
+
 ## Public HTTP error handling
 
 The Viewer returns a generic HTTP 500 message if a request triggers an
