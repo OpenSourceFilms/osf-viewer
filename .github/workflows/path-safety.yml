@@ -25,6 +25,7 @@ on:
       - "request_limits.py"
       - "tests/test_worker_admission.py"
       - "tests/test_denylist_fail_closed.py"
+      - "tests/test_inspector_error_redaction.py"
       - "denylist.txt"
   pull_request:
     paths:
@@ -50,6 +51,7 @@ on:
       - "request_limits.py"
       - "tests/test_worker_admission.py"
       - "tests/test_denylist_fail_closed.py"
+      - "tests/test_inspector_error_redaction.py"
       - "denylist.txt"
   workflow_dispatch:
 permissions:
@@ -92,3 +94,5 @@ jobs:
         run: python -B -m unittest discover -s tests -p "test_worker_admission.py" -v
       - name: Refuse missing or incomplete Viewer access policies
         run: python -B -m unittest discover -s tests -p "test_denylist_fail_closed.py" -v
+      - name: Keep inspector parse failures out of public text reports
+        run: python -B -m unittest discover -s tests -p "test_inspector_error_redaction.py" -v

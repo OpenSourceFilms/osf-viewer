@@ -146,6 +146,17 @@ live Copyparty behaviour, reverse-proxy access control or real credential
 paths are accepted by these tests. A 503 can indicate access-policy failure
 as well as the separate concurrency capacity limit described below.
 
+## Public text error handling
+
+An error in a document, metadata or archive inspector produces a generic
+fallback marker, not a Python traceback or interpolated exception value.
+The same rule applies to per-page PDF failures, audio metadata, SQLite
+queries, Parquet row groups and directory stat errors. This protects
+internal exception messages, **not** the actual contents of authorised
+source files: `/text`, `/raw` and the HTML preview are designed to
+represent those contents. This also does not substitute for Copyparty and
+reverse-proxy access-control acceptance.
+
 ## HTTP concurrency and overload behaviour
 
 The public Viewer listener is constructed with
