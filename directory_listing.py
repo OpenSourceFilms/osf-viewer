@@ -34,9 +34,9 @@ def bounded_visible_entries(
 
     count = 0
 
-    def visible():
-        nonlocal count
-        with os.scandir(directory) as iterator:
+    with os.scandir(directory) as iterator:
+        def visible():
+            nonlocal count
             for raw in iterator:
                 child = Path(raw.path)
                 if is_denied is not None and is_denied(child):
@@ -44,5 +44,5 @@ def bounded_visible_entries(
                 count += 1
                 yield child
 
-    selected = heapq.nsmallest(limit, visible(), key=lambda p: p.name)
+        selected = heapq.nsmallest(limit, visible(), key=lambda p: p.name)
     return selected, count
