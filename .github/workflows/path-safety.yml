@@ -26,6 +26,7 @@ on:
       - "tests/test_worker_admission.py"
       - "tests/test_denylist_fail_closed.py"
       - "tests/test_inspector_error_redaction.py"
+      - "tests/test_native_pdf_streaming.py"
       - "denylist.txt"
   pull_request:
     paths:
@@ -52,6 +53,7 @@ on:
       - "tests/test_worker_admission.py"
       - "tests/test_denylist_fail_closed.py"
       - "tests/test_inspector_error_redaction.py"
+      - "tests/test_native_pdf_streaming.py"
       - "denylist.txt"
   workflow_dispatch:
 permissions:
@@ -96,3 +98,5 @@ jobs:
         run: python -B -m unittest discover -s tests -p "test_denylist_fail_closed.py" -v
       - name: Keep inspector parse failures out of public text reports
         run: python -B -m unittest discover -s tests -p "test_inspector_error_redaction.py" -v
+      - name: Verify native PDF streaming never loads entire file
+        run: python -B -m unittest discover -s tests -p "test_native_pdf_streaming.py" -v
