@@ -44,8 +44,11 @@ def _is_external_odf_reference(value: str) -> bool:
 
 def _xml_visible_values(root: ET.Element) -> str:
     """Check text and attributes after XML entity/encoding decoding."""
+    text_values = list(root.itertext())
+    # Preserve adjacent-element boundaries for standalone e-mails, while
+    # retaining a joined view to detect values split across nested markup.
     return "\n".join(
-        ["".join(root.itertext())] +
+        text_values + ["".join(text_values)] +
         [value for element in root.iter() for value in element.attrib.values()]
     )
 
