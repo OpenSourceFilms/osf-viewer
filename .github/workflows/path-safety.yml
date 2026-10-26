@@ -22,6 +22,8 @@ on:
       - "tests/test_7z_memory_extraction.py"
       - "tests/test_archive_member_bounds.py"
       - "tests/test_tar_header_scan_bounds.py"
+      - "request_limits.py"
+      - "tests/test_worker_admission.py"
   pull_request:
     paths:
       - ".github/workflows/path-safety.yml"
@@ -43,6 +45,8 @@ on:
       - "tests/test_7z_memory_extraction.py"
       - "tests/test_archive_member_bounds.py"
       - "tests/test_tar_header_scan_bounds.py"
+      - "request_limits.py"
+      - "tests/test_worker_admission.py"
   workflow_dispatch:
 permissions:
   contents: read
@@ -80,3 +84,5 @@ jobs:
         run: python -B -m unittest discover -s tests -p "test_archive_member_bounds.py" -v
       - name: Ensure TAR header scan itself is bounded
         run: python -B -m unittest discover -s tests -p "test_tar_header_scan_bounds.py" -v
+      - name: Exercise bounded worker admission via disposable loopback server
+        run: python -B -m unittest discover -s tests -p "test_worker_admission.py" -v
