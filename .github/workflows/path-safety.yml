@@ -21,6 +21,7 @@ on:
       - "inspectors.py"
       - "tests/test_7z_memory_extraction.py"
       - "tests/test_archive_member_bounds.py"
+      - "tests/test_tar_header_scan_bounds.py"
   pull_request:
     paths:
       - ".github/workflows/path-safety.yml"
@@ -41,6 +42,7 @@ on:
       - "inspectors.py"
       - "tests/test_7z_memory_extraction.py"
       - "tests/test_archive_member_bounds.py"
+      - "tests/test_tar_header_scan_bounds.py"
   workflow_dispatch:
 permissions:
   contents: read
@@ -76,3 +78,5 @@ jobs:
         run: python -B -m unittest discover -s tests -p "test_7z_memory_extraction.py" -v
       - name: Verify TAR symlink rejection and ZIP/TAR actual size caps
         run: python -B -m unittest discover -s tests -p "test_archive_member_bounds.py" -v
+      - name: Ensure TAR header scan itself is bounded
+        run: python -B -m unittest discover -s tests -p "test_tar_header_scan_bounds.py" -v
