@@ -30,6 +30,7 @@ from urllib.parse import quote, unquote, urlsplit
 sys.path.insert(0, str(Path(__file__).parent))
 import security
 import inspectors
+from directory_listing import bounded_visible_entries
 from request_limits import BoundedViewerServer
 
 ROOT = Path("/workspace")
@@ -265,8 +266,8 @@ class ViewerHandler(BaseHTTPRequestHandler):
         pred = _denied_predicate()
         if kind == "directory" and real is not None:
             rows.append("<ul>")
-            visible = [e for e in sorted(real.iterdir(), key=lambda p: p.name) if not pred(e)]
-            for entry in visible[:2000]:
+            visible, _total_visible = bounded_visible_entries(real, pred)
+            for entry in visible:
                 child_rel = f"{relpath}/{entry.name}".lstrip("/")
                 rows.append(f'<li><a href="{viewer_url(child_rel)}">{html.escape(entry.name)}'
                             f'{"/" if entry.is_dir() else ""}</a></li>')

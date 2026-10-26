@@ -114,6 +114,22 @@ The request-worker admission cap described below reduces concurrent workload amp
 as a bounded plain-text table (name, kind, size, mtime) for machine
 consumption.
 
+## Very large directory listings
+
+Both HTML directory hubs and `/text` reports use a shared
+`os.scandir()` iterator and keep at most 2,000 sorted, deny-filtered
+entries in memory instead of first building and sorting a full directory
+listing. Counts in the text report remain exact for the visible portion
+of the tree, including a count of omitted entries. The same
+`security.is_denied()` predicate excludes sensitive aliases, forbidden
+basenames and root-escaping symlinks from both views.
+
+This is an **O(2,000)-entry retained-memory boundary**, not an execution
+timeout: locating the smallest names and their count still requires
+scanning every directory entry. Hostile or extremely slow filesystems can
+still consume I/O and CPU resources. The bounded HTTP worker pool is a
+separate control.
+
 ## Large files
 
 Never fully read just to build a page:

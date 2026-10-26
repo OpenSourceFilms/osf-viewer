@@ -39,6 +39,7 @@ import pyarrow.parquet as pq
 import cache as _cache
 import office_extract
 import archive_memory
+from directory_listing import bounded_visible_entries, MAX_DISPLAY
 
 TEXT_EXTS = {
     "py", "sh", "md", "txt", "json", "yaml", "yml", "toml", "ini", "cfg",
@@ -193,12 +194,10 @@ def _read_bytes(path: Optional[Path], data: Optional[bytes], cap: Optional[int] 
 
 
 def _text_directory(path: Path, is_denied: Optional[Callable[[Path], bool]] = None) -> str:
-    entries = sorted(path.iterdir(), key=lambda p: p.name)
-    if is_denied is not None:
-        entries = [e for e in entries if not is_denied(e)]
-    lines = [f"directory: {path}", f"entries: {len(entries)}", ""]
-    truncated = len(entries) > 2000
-    for e in entries[:2000]:
+    entries, visible_count = bounded_visible_entries(path, is_denied)
+    lines = [f"directory: {path}", f"entries: {visible_count}", ""]
+    truncated = visible_count > MAX_DISPLAY
+    for e in entries:
         try:
             st = e.stat()
             kind = "dir " if e.is_dir() else "file"
@@ -206,7 +205,7 @@ def _text_directory(path: Path, is_denied: Optional[Callable[[Path], bool]] = No
         except OSError:
             lines.append(f"???   {'?':>12}  ?                 {e.name}  (stat unavailable)")
     if truncated:
-        lines.append(f"... truncated, {len(entries) - 2000} more entries not shown")
+        lines.append(f"... truncated, {visible_count - MAX_DISPLAY} more entries not shown")
     return "\n".join(lines) + "\n"
 
 

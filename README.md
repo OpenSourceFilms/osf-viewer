@@ -127,6 +127,23 @@ This change improves the native-PDF response path only, not the memory
 and CPU limits for arbitrary PDF parsing or generated previews.
 It is not deployed to the running Viewer merely by merging the repository.
 
+## Bounded directory listing memory
+
+HTML directory hubs and `/text` directory reports use the same
+[bounded scanner](directory_listing.py): `os.scandir()` streams each
+entry, a shared deny predicate rejects private or escaping paths, and a
+bounded smallest-name selection retains at most **2,000 paths** instead
+of sorting the entire directory into memory. `/text` continues to show
+the exact visible-entry count and omitted-entry count. Sorting is by
+filename, consistent with the previous report.
+
+The complete directory must still be traversed to find the alphabetically
+first 2,000 permitted names; this limits Python allocation, **not CPU or
+filesystem enumeration time**. Six
+[offline regressions](tests/test_bounded_directory_listing.py) cover a
+25,000-entry virtual directory, memory growth, iterator closure, real
+temporary-directory denial checks and HTML/text consistency.
+
 ## Bounded request concurrency
 
 The HTTP listener uses [bounded worker admission](request_limits.py) to
