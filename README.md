@@ -66,8 +66,10 @@ document text is synthetic.
 
 [The fixture package audit](scripts/audit_fixture_packages.py) and
 [offline regression tests](tests/test_fixture_package_safety.py) check
-for external relationships, embedded executable/attachment locations,
-unexpected package paths and selected personal metadata patterns. They
+for OOXML external relationships and ODF external `xlink:href` references,
+embedded executable/attachment locations, unexpected package paths and
+selected XML-decoded personal metadata patterns, including character
+references and declared XML encodings. They
 do **not** prove the creator's copyright, inspect everything inside
 legacy OLE/RTF fixtures, or determine the rights to embedded thumbnail
 artwork. The complete reuse-licence and fixture-provenance decision
