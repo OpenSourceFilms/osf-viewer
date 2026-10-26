@@ -89,8 +89,11 @@ class InspectorRedactionTests(unittest.TestCase):
             def stat(self):
                 raise OSError(SECRET)
 
-        parent = SimpleNamespace(iterdir=lambda: [FakeEntry()])
-        text_dir = subject("_text_directory", {})
+        parent = SimpleNamespace()
+        text_dir = subject("_text_directory", {
+            "bounded_visible_entries": lambda _path, _is_denied: ([FakeEntry()], 1),
+            "MAX_DISPLAY": 2000,
+        })
         output = text_dir(parent)
         self.assert_redacted(output, "stat unavailable")
         self.assertIn("synthetic-file.txt", output)
