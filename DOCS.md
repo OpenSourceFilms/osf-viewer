@@ -54,7 +54,12 @@ file on this volume (`melb_acquire/census.db`).
 Returns `application/pdf`, or HTTP 404 with a JSON body
 `{"error": "no visual representation for this file type"}` when none
 applies (text files, archives, audio, unsupported binaries). Native PDFs
-are streamed as-is; images are converted losslessly; video gets a 6-frame
+are served as-is by the HTTP handler in **1 MiB bounded stream chunks**,
+with a `Content-Length` taken from the opened file descriptor, not a
+whole-file `bytes` allocation. `HEAD` returns the native PDF's length
+without reading its contents. Extracted PDF archive members still use their
+existing bounded in-memory representation; image previews are converted
+losslessly; video gets a 6-frame
 contact sheet via `ffmpeg`. Image/video conversions are cached under
 `OSFV_CACHE_DIR`, keyed by `sha256(relpath:size:mtime)`.
 
