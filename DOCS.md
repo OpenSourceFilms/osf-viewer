@@ -121,6 +121,32 @@ Never fully read just to build a page:
   never tensor data (verified: a 3.9GB checkpoint returns in ~0.02s).
 - SQLite: `LIMIT 10` sample rows per table, not a full dump.
 
+## HTTP concurrency and overload behaviour
+
+The public Viewer listener is constructed with
+[`request_limits.BoundedViewerServer`](request_limits.py), not bare
+`ThreadingHTTPServer`. The current source default is a maximum of
+**two simultaneous request-handler threads**. Once both slots are busy,
+additional accepted connections receive an immediate HTTP **503 Service
+Unavailable** with `Retry-After: 1` and `Connection: close`, without
+spawning another request handler. A slot is returned when its handler exits,
+including error paths. Socket I/O has a **30-second idle timeout**.
+
+This deliberately protects the small shared CPU host against an arbitrary
+number of concurrent 200 MiB archive decoders, preview image renderers,
+LibreOffice conversions or long raw downloads. It also means the
+`/__view_health__` endpoint can return 503 during overload. That is a
+*capacity signal*, not independently proof of a crashed service.
+
+The [synthetic loopback admission tests](tests/test_worker_admission.py)
+exercise concurrent holds, overload rejection and recovery without touching
+the production network volume. The max-worker setting is a conservative
+source default, **not a measured deployment sizing result**. Neither the
+worker limit nor an I/O timeout bounds CPU seconds spent on one hostile
+archive, cumulative memory allocations within a worker, upstream Copyparty
+raw routes, HTTP ingress load or operating-system resources used before
+acceptance. Add deployment-specific limits and independent live acceptance.
+
 ## Security / path exclusions
 
 Every inbound path goes through `security.safe_resolve()`
