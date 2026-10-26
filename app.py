@@ -22,7 +22,6 @@ import json
 import shutil
 import sys
 import time
-import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import quote, unquote, urlsplit
@@ -139,12 +138,14 @@ class ViewerHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             self._dispatch()
-        except Exception:  # noqa: BLE001 - absolute last resort, never a bare 500 with no body
-            tb = traceback.format_exc()
-            sys.stderr.write(tb)
+        except Exception as exc:  # noqa: BLE001 - last-resort HTTP error boundary
+            # Neither a public HTTP response nor a potentially public pod log
+            # should expose Python tracebacks, local paths or exception values.
+            # Log only the exception *class*, without request parameters.
+            sys.stderr.write(f"osf_viewer internal error: {type(exc).__name__}\n")
             try:
-                self._send_text(500, "internal error, this should not happen:\n\n" + tb)
-            except Exception:  # noqa: BLE001
+                self._send_text(500, "internal server error")
+            except Exception:  # noqa: BLE001 - response stream may be broken
                 pass
 
     def _dispatch(self):
@@ -209,8 +210,10 @@ class ViewerHandler(BaseHTTPRequestHandler):
     def _handle_member(self, archive_real: Path, archive_rel: str, member: str, mode: str):
         try:
             data = inspectors.read_archive_member(archive_real, None, archive_rel, member)
-        except Exception as exc:  # noqa: BLE001
-            self._send_text(200, f"[could not extract archive member {member!r}: {exc!r}]")
+        except Exception:  # noqa: BLE001 - preserve text-mode fallback
+            # Archive-library exceptions can include local absolute paths
+            # and untrusted member strings. Do not echo them to HTTP users.
+            self._send_text(200, "[could not extract requested archive member]")
             return
         hint = f"{archive_rel}!{member}"
         if mode == "raw":
@@ -256,8 +259,8 @@ class ViewerHandler(BaseHTTPRequestHandler):
                     rows.append(f'<li><a href="{viewer_url(member_rel)}">{html.escape(name)}</a> '
                                 f"({size} bytes)</li>")
                 rows.append("</ul>")
-            except Exception as exc:  # noqa: BLE001
-                rows.append(f"<p>could not list archive members: {html.escape(repr(exc))}</p>")
+            except Exception:  # noqa: BLE001
+                rows.append("<p>could not list archive members</p>")
         rows.append(f"<pre>{html.escape(inspectors.get_text(real, member_bytes, relpath, is_denied=pred)[:20000])}</pre>")
         body = "<html><body>" + "\n".join(rows) + "</body></html>"
         self._send_text(200, body, content_type="text/html; charset=utf-8")

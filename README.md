@@ -99,6 +99,22 @@ See `DOCS.md` for the full URL mapping, the `/text` and `/preview.pdf`
 degradation contracts, and service management (`start.sh` / `stop.sh` /
 `restart.sh` / `status.sh`).
 
+## Public HTTP error handling
+
+The Viewer returns a generic HTTP 500 message if a request triggers an
+unexpected handler exception. Archive-member and archive-listing failures
+also avoid returning internal exception representations, which can reveal
+deployment paths or request-specific details. Server logs record only the
+exception type for this last-resort boundary, not the full traceback.
+An isolated, standard-library-only
+[HTTP error regression suite](tests/test_http_error_redaction.py) runs
+through GitHub Actions without opening a socket.
+
+These are public-source protections, **not proof of the live deployment's
+proxy configuration, filesystem privileges, race resistance or Copyparty
+raw-route access controls**. The separate Copyparty exposure described in
+[DOCS.md](DOCS.md) must be assessed at the actual ingress and raw routes.
+
 ## Symlink and denylist safety
 
 Directory listings and direct file requests share the same deny policy.
