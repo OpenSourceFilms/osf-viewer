@@ -77,6 +77,12 @@ security gap.
 Archive decompression protection: a single requested archive member
 over 200 MiB declared uncompressed size (`MAX_MEMBER_EXTRACT`) is refused;
 archive listings cap at 5000 enumerated members (`MAX_ARCHIVE_LIST`).
+The Viewer now also checks the **actual returned bytes** for ZIP and
+regular TAR members, rather than trusting only archive metadata. TAR
+symbolic links, hardlinks, devices and non-file member types are refused
+for direct member reading; they could otherwise dereference a larger
+in-archive file whose link record reports zero bytes.
+
 For 7z specifically, `archive_memory.read_7z_member()` uses py7zr's
 `WriterFactory` interface to decode a selected member into a **bounded
 in-memory stream**: no temporary archive extraction path or directory is
