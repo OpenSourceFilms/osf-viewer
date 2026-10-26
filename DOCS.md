@@ -74,13 +74,20 @@ member that is itself a zip degrades to its own hub/text/raw as an opaque
 file, not as a browsable nested archive. This is a known limitation, not a
 security gap.
 
-Zip-bomb protection: a single member over 200MB uncompressed
-(`MAX_MEMBER_EXTRACT`) is refused rather than extracted; archive listings
-cap at 5000 enumerated members (`MAX_ARCHIVE_LIST`). Nothing is ever
-extracted onto `/workspace` — 7z members (whose library has no in-memory
-read API) are extracted into a throwaway `tempfile.TemporaryDirectory()`
-under `OSFV_CACHE_DIR` and the directory is removed immediately after the
-bytes are read back.
+Archive decompression protection: a single requested archive member
+over 200 MiB declared uncompressed size (`MAX_MEMBER_EXTRACT`) is refused;
+archive listings cap at 5000 enumerated members (`MAX_ARCHIVE_LIST`).
+For 7z specifically, `archive_memory.read_7z_member()` uses py7zr's
+`WriterFactory` interface to decode a selected member into a **bounded
+in-memory stream**: no temporary archive extraction path or directory is
+created on disk. It rejects unsafe names, oversized metadata and actual
+writes beyond the cap. The updated pin is py7zr 1.1.4, whose 12 October
+2026 release also fixed symlink-chain destination escapes.
+
+These are per-member limits, **not a full CPU/time/memory sandbox** for
+hostile compressed archives. Opening archive headers precedes member
+selection; solid archives can process unrelated compressed streams.
+Concurrent request limits and real deployment acceptance remain separate.
 
 ## Directories
 
