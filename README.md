@@ -27,6 +27,27 @@ not impose a new licence, and does not grant additional rights. The paths,
 tunnel rules and startup assumptions below describe an OSF-specific service,
 not a public deployment guarantee.
 
+## Office fixture provenance and package checks
+
+The public `tests/fixtures/` directory contains synthetic Office test
+documents, including six ZIP-based OOXML/ODF packages and older binary
+DOC/XLS/PPT/RTF files. The ZIP packages contain some Office-generated
+components beyond visible test text: the DOCX and PPTX include
+`docProps/thumbnail.jpeg` previews, the PPTX has printer-settings
+data, and the DOCX has custom XML. These **are not asserted to be
+independently cleared third-party assets** merely because the visible
+document text is synthetic.
+
+[The fixture package audit](scripts/audit_fixture_packages.py) and
+[offline regression tests](tests/test_fixture_package_safety.py) check
+for external relationships, embedded executable/attachment locations,
+unexpected package paths and selected personal metadata patterns. They
+do **not** prove the creator's copyright, inspect everything inside
+legacy OLE/RTF fixtures, or determine the rights to embedded thumbnail
+artwork. The complete reuse-licence and fixture-provenance decision
+remains tracked in [issue #1](https://github.com/OpenSourceFilms/osf-viewer/issues/1).
+No fixture binaries have been changed by this audit.
+
 ## Why
 
 Copyparty serves files on this volume as raw bytes. That's fine for a video
