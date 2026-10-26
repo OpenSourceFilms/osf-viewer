@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "review_date": "2026-10-27",
+  "purpose": "Immutable identification and fail-closed inventory of published Viewer Office fixture bytes; NOT proof of authorship, licence or clearance",
+  "rights_decision": "OPEN: https://github.com/OpenSourceFilms/osf-viewer/issues/1",
+  "files": {
+    "tests/fixtures/corrupt.docx": {
+      "git_blob_sha1": "6f9a83bb6fab14b85306299aa3a0cdbc6853204f",
+      "size_bytes": 304,
+      "kind": "intentionally_corrupt",
+      "review_status": "provenance_and_redistribution_rights_unverified",
+      "flags": []
+    },
+    "tests/fixtures/corrupt.xls": {
+      "git_blob_sha1": "35358bda4b186f6fc22d5c376ad43d513c492292",
+      "size_bytes": 50,
+      "kind": "intentionally_corrupt",
+      "review_status": "provenance_and_redistribution_rights_unverified",
+      "flags": []
+    },
+    "tests/fixtures/sample.doc": {
+      "git_blob_sha1": "de6a95c36dcfd36811d03b0e6226504dbc775d3d",
+      "size_bytes": 15872,
+      "kind": "legacy_binary_or_rtf",
+      "review_status": "provenance_and_redistribution_rights_unverified",
+      "flags": [
+        "legacy_container_not_fully_inspected"
+      ]
+    },
+    "tests/fixtures/sample.docx": {
+      "git_blob_sha1": "d19961cf213f31cf75ef8cc1c83b3f0b58636308",
+      "size_bytes": 36967,
+      "kind": "zip_office_package",
+      "review_status": "provenance_and_redistribution_rights_unverified",
+      "flags": [
+        "embedded_thumbnail_rights_unresolved",
+        "custom_xml_present"
+      ]
+    },
+    "tests/fixtures/sample.odp": {
+      "git_blob_sha1": "358bbba1aaf2eb44d5768a1b736cf8ca779a9135",
+      "size_bytes": 1720,
+      "kind": "zip_office_package",
+      "review_status": "provenance_and_redistribution_rights_unverified",
+      "flags": []
+    },
+    "tests/fixtures/sample.ods": {
+      "git_blob_sha1": "51178ffb44df332451b834a2b12a0784f4ff8677",
+      "size_bytes": 1584,
+      "kind": "zip_office_package",
+      "review_status": "provenance_and_redistribution_rights_unverified",
+      "flags": []
+    },
+    "tests/fixtures/sample.odt": {
+      "git_blob_sha1": "ebd33ca9c979162a5d8611bd8ca93410d624f434",
+      "size_bytes": 1477,
+      "kind": "zip_office_package",
+      "review_status": "provenance_and_redistribution_rights_unverified",
+      "flags": []
+    },
+    "tests/fixtures/sample.ppt": {
+      "git_blob_sha1": "78041d295a9e5315865384dfabf1a81f91b69437",
+      "size_bytes": 168448,
+      "kind": "legacy_binary_or_rtf",
+      "review_status": "provenance_and_redistribution_rights_unverified",
+      "flags": [
+        "legacy_container_not_fully_inspected"
+      ]
+    },
+    "tests/fixtures/sample.pptx": {
+      "git_blob_sha1": "e2be07c2c643b4d77eb00a558a1b8f2ced570a29",
+      "size_bytes": 36709,
+      "kind": "zip_office_package",
+      "review_status": "provenance_and_redistribution_rights_unverified",
+      "flags": [
+        "embedded_thumbnail_rights_unresolved",
+        "printer_settings_present"
+      ]
+    },
+    "tests/fixtures/sample.rtf": {
+      "git_blob_sha1": "9eb00e22af8b6ab53bcae8484e968ea8bf99f4af",
+      "size_bytes": 12780,
+      "kind": "legacy_binary_or_rtf",
+      "review_status": "provenance_and_redistribution_rights_unverified",
+      "flags": [
+        "legacy_container_not_fully_inspected"
+      ]
+    },
+    "tests/fixtures/sample.xls": {
+      "git_blob_sha1": "38b2e50518990533554a1c34fe4d753c7f3ed3e7",
+      "size_bytes": 6656,
+      "kind": "legacy_binary_or_rtf",
+      "review_status": "provenance_and_redistribution_rights_unverified",
+      "flags": [
+        "legacy_container_not_fully_inspected"
+      ]
+    },
+    "tests/fixtures/sample.xlsx": {
+      "git_blob_sha1": "1dee8cceeec0c27976f0388aba1289f0ff99d74e",
+      "size_bytes": 5466,
+      "kind": "zip_office_package",
+      "review_status": "provenance_and_redistribution_rights_unverified",
+      "flags": []
+    }
+  }
+}
