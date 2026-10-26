@@ -74,6 +74,14 @@ class FixturePackageSafetyTests(unittest.TestCase):
                 z.writestr("meta.xml", '<meta><creator>alice&#64;gmail.com</creator></meta>')
             self.assertIn("personal_email_metadata", scan(path)["issues"])
 
+    def test_adjacent_metadata_elements_preserve_email_boundary(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "adjacent.odt"
+            with zipfile.ZipFile(path, "w") as z:
+                z.writestr("meta.xml", "<meta><creator>alice@gmail.com</creator>"
+                                       "<date>2026-10-26</date></meta>")
+            self.assertIn("personal_email_metadata", scan(path)["issues"])
+
     def test_rejects_utf16_encoded_email_metadata(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "utf16.odt"
