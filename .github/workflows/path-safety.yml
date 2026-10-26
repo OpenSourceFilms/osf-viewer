@@ -20,6 +20,7 @@ on:
       - "archive_memory.py"
       - "inspectors.py"
       - "tests/test_7z_memory_extraction.py"
+      - "tests/test_archive_member_bounds.py"
   pull_request:
     paths:
       - ".github/workflows/path-safety.yml"
@@ -39,6 +40,7 @@ on:
       - "archive_memory.py"
       - "inspectors.py"
       - "tests/test_7z_memory_extraction.py"
+      - "tests/test_archive_member_bounds.py"
   workflow_dispatch:
 permissions:
   contents: read
@@ -72,3 +74,5 @@ jobs:
         run: python -m pip install --disable-pip-version-check "py7zr==1.1.4"
       - name: Verify real 7z decoding without on-disk extraction
         run: python -B -m unittest discover -s tests -p "test_7z_memory_extraction.py" -v
+      - name: Verify TAR symlink rejection and ZIP/TAR actual size caps
+        run: python -B -m unittest discover -s tests -p "test_archive_member_bounds.py" -v
