@@ -17,6 +17,9 @@ on:
       - "tests/test_dependency_licence_inventory.py"
       - "app.py"
       - "tests/test_http_error_redaction.py"
+      - "archive_memory.py"
+      - "inspectors.py"
+      - "tests/test_7z_memory_extraction.py"
   pull_request:
     paths:
       - ".github/workflows/path-safety.yml"
@@ -33,6 +36,9 @@ on:
       - "tests/test_dependency_licence_inventory.py"
       - "app.py"
       - "tests/test_http_error_redaction.py"
+      - "archive_memory.py"
+      - "inspectors.py"
+      - "tests/test_7z_memory_extraction.py"
   workflow_dispatch:
 permissions:
   contents: read
@@ -62,3 +68,7 @@ jobs:
         run: python -B -m unittest discover -s tests -p "test_dependency_licence_inventory.py" -v
       - name: Verify safe public HTTP errors without opening sockets
         run: python -B -m unittest discover -s tests -p "test_http_error_redaction.py" -v
+      - name: Install exact published py7zr security release
+        run: python -m pip install --disable-pip-version-check "py7zr==1.1.4"
+      - name: Verify real 7z decoding without on-disk extraction
+        run: python -B -m unittest discover -s tests -p "test_7z_memory_extraction.py" -v

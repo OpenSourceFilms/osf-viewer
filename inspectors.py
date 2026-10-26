@@ -38,6 +38,7 @@ import pyarrow.parquet as pq
 
 import cache as _cache
 import office_extract
+import archive_memory
 
 TEXT_EXTS = {
     "py", "sh", "md", "txt", "json", "yaml", "yml", "toml", "ini", "cfg",
@@ -404,26 +405,11 @@ def read_archive_member(path: Optional[Path], data: Optional[bytes], filename_hi
                                   f"{MAX_MEMBER_EXTRACT} byte extraction cap")
             return arc.read(member)
         if kind == "7z":
-            # py7zr's SevenZipFile has no in-memory read() API -- it only
-            # extracts to disk. extract() into a throwaway temp dir under our
-            # own cache root (never /workspace directly) and read it back.
-            size = None
-            for zi in arc.list():
-                if zi.filename == member:
-                    size = getattr(zi, "uncompressed", 0) or 0
-                    break
-            if size is None:
-                raise KeyError(member)
-            if size > MAX_MEMBER_EXTRACT:
-                raise ValueError(f"member {member} is {size} bytes, over the "
-                                  f"{MAX_MEMBER_EXTRACT} byte extraction cap")
-            _cache.CACHE_DIR.mkdir(parents=True, exist_ok=True)
-            with tempfile.TemporaryDirectory(dir=str(_cache.CACHE_DIR)) as td:
-                arc.extract(path=td, targets=[member])
-                extracted = Path(td) / member
-                if not extracted.is_file():
-                    raise KeyError(member)
-                return extracted.read_bytes()
+            # No filesystem writes: py7zr streams selected content into a
+            # WriterFactory whose actual decompressed bytes are bounded.
+            # This removes the temporary-directory symlink-chain attack
+            # surface, independently of py7zr's own path sanitisation.
+            return archive_memory.read_7z_member(arc, member, MAX_MEMBER_EXTRACT)
         ti = arc.getmember(member)
         if ti.size > MAX_MEMBER_EXTRACT:
             raise ValueError(f"member {member} is {ti.size} bytes, over the "

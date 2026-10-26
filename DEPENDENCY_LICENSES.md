@@ -29,7 +29,7 @@ Owner approval is still required: https://github.com/OpenSourceFilms/osf-viewer/
 | openpyxl==3.1.5 | MIT | [PyPI 3.1.5](https://pypi.org/project/openpyxl/3.1.5/) | Pinned-release metadata |
 | pillow==12.3.0 | MIT-CMU | [PyPI 12.3.0](https://pypi.org/project/pillow/12.3.0/) | Pinned-release SPDX expression; external image codecs require separate review |
 | psutil==7.2.2 | BSD-3-Clause | [PyPI 7.2.2](https://pypi.org/project/psutil/7.2.2/) | Pinned-release metadata |
-| py7zr==1.1.3 | LGPL-2.1-or-later | [PyPI 1.1.3](https://pypi.org/project/py7zr/1.1.3/) | Pinned-release SPDX expression |
+| py7zr==1.1.4 | LGPL-2.1-or-later | [PyPI 1.1.4](https://pypi.org/project/py7zr/1.1.4/) | Pinned-release SPDX expression; 12 Oct 2026 upstream fix for symlink-chain arbitrary writes |
 | pyarrow==25.0.1 | Apache-2.0 | [PyPI 25.0.1](https://pypi.org/project/pyarrow/25.0.1/) | Pinned-release SPDX expression; binary C++ libraries/notices not audited |
 | pybcj==1.0.8 | LGPL-2.1-or-later | [PyPI 1.0.8](https://pypi.org/project/pybcj/1.0.8/) | Pinned-release SPDX expression; C code adapted from 7-Zip family |
 | pycryptodomex==3.23.0 | BSD / Public Domain | [PyPI 3.23.0](https://pypi.org/project/pycryptodomex/3.23.0/) | Pinned-release metadata; inspect bundled components |
@@ -40,6 +40,16 @@ Owner approval is still required: https://github.com/OpenSourceFilms/osf-viewer/
 | python-pptx==1.0.2 | MIT | [PyPI 1.0.2](https://pypi.org/project/python-pptx/1.0.2/) | Pinned-release metadata |
 | safetensors==0.8.0 | Apache-2.0 | [PyPI 0.8.0](https://pypi.org/project/safetensors/0.8.0/) | Pinned-release metadata |
 | texttable==1.7.0 | MIT | [PyPI 1.7.0](https://pypi.org/project/texttable/1.7.0/) | Pinned-release metadata |
+
+## Security update: 27 October 2026
+
+The earlier `py7zr==1.1.3` pin predates upstream's 12 October 2026
+`py7zr==1.1.4` security fix for crafted archive symlink chains
+([upstream changelog](https://py7zr.readthedocs.io/en/stable/Changelog.html)).
+The repository now pins 1.1.4 and uses a bounded in-memory WriterFactory
+for Viewer 7z member extraction instead of asking py7zr to create files.
+Upgrading the source pin does **not** install the update on any running
+Viewer service. Independently validate before deploying.
 
 ## Rights-sensitive dependencies
 

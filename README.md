@@ -41,6 +41,18 @@ preserve applicable licence/notice terms and resolve the separate
 [ownership and reuse issue](https://github.com/OpenSourceFilms/osf-viewer/issues/1).
 Package metadata alone is not wheel-level or legal clearance.
 
+## Safer 7z member reading
+
+7z files use [diskless bounded extraction](archive_memory.py) rather than
+creating files from archive-controlled paths. The `py7zr` pin was updated
+from 1.1.3 to **1.1.4**, which addresses an upstream symlink-chain
+destination-escape security issue. The new
+[synthetic archive regression suite](tests/test_7z_memory_extraction.py)
+tests actual selected-member decoding plus size, path and output-stream
+safeguards. This source update does **not** change the live deployed Viewer
+installation. Hostile archive parsers can still consume CPU and memory;
+these checks are not a complete exposure or denial-of-service review.
+
 ## Office fixture provenance and package checks
 
 The public `tests/fixtures/` directory contains synthetic Office test
