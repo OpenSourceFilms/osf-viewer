@@ -60,6 +60,14 @@ def main() -> int:
         from tests import test_office_extract as original
         original.FIXTURES = generated
 
+        # Record inherited formatting and fail closed on media, attachments,
+        # external OOXML relationships or sensitive metadata in new candidates.
+        from scripts.audit_generated_office_components import audit_directory
+        import json
+        provenance = audit_directory(generated)
+        print(json.dumps(provenance, indent=2, sort_keys=True), flush=True)
+        if not provenance["safe_from_unreviewed_binary_components"]:
+            raise SystemExit("Generated package component audit failed")
         # The package scanner's old-fixture expectations include inherited
         # thumbnails; its scanner itself must find none in the new candidates.
         from scripts.audit_fixture_packages import scan_package, ARCHIVES
