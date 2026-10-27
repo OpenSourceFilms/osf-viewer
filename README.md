@@ -36,10 +36,11 @@ of publisher-declared licence metadata, checked against
 and five archive/compression packages are **LGPL-2.1-or-later**. The
 `odfpy` metadata is ambiguous about alternative/combined licensing.
 
-This does **not** mean the Viewer code itself is GPL, LGPL or MIT. Assess
-whether any future redistributable package bundles those dependencies,
-preserve applicable licence/notice terms and resolve the separate
-[ownership and reuse issue](https://github.com/OpenSourceFilms/osf-viewer/issues/1).
+The Viewer source controlled by OSF is **MIT-licensed**, but that grant
+does not change any GPL/LGPL or other third-party dependency terms.
+Assess whether redistributable packages bundle those dependencies,
+preserve upstream notices and resolve the separate
+[fixture provenance issue](https://github.com/OpenSourceFilms/osf-viewer/issues/1).
 Package metadata alone is not wheel-level or legal clearance.
 
 ## Safer 7z member reading
@@ -73,8 +74,9 @@ selected XML-decoded personal metadata patterns, including character
 references and declared XML encodings. They
 do **not** prove the creator's copyright, inspect everything inside
 legacy OLE/RTF fixtures, or determine the rights to embedded thumbnail
-artwork. The complete reuse-licence and fixture-provenance decision
-remains tracked in [issue #1](https://github.com/OpenSourceFilms/osf-viewer/issues/1).
+artwork. The remaining **fixture provenance and exceptional rights** review
+is tracked in [issue #1](https://github.com/OpenSourceFilms/osf-viewer/issues/1).
+The OSF-controlled original source already has a scoped MIT grant.
 No fixture binaries have been changed by this audit.
 
 **Binary review checkpoint (27 October 2026):** the new
@@ -88,6 +90,43 @@ explicit manifest update. Every asset is deliberately labelled
 **not** establish who created the document, clear embedded artwork or grant
 reuse permission. Changes to fixture bytes must be reviewed separately
 before public redistribution.
+
+## Disposable, source-generated Office fixture candidates
+
+The [candidate generator](scripts/generate_clean_office_candidates.py)
+provides an independent way to **attempt** replacement of the 12
+rights-pending published fixture binaries. It writes only into a
+previously nonexistent destination outside `tests/fixtures/`:
+
+```bash
+python scripts/generate_clean_office_candidates.py --out /tmp/osf-office-candidates
+# With LibreOffice installed, also create .doc/.xls/.ppt/.rtf candidates:
+python scripts/generate_clean_office_candidates.py \
+  --out /tmp/osf-office-candidates-with-legacy --with-legacy
+```
+
+The modern formats use separately licensed `python-docx`, `openpyxl`,
+`python-pptx` and `odfpy`. Legacy conversion calls a local
+LibreOffice process with an isolated user profile. Those tools'
+source-package templates and their upstream obligations are **not**
+relicensed or independently cleared by the generator.
+
+The generator deliberately removes default DOCX/PPTX template
+thumbnails, custom XML and printer-settings parts, including associated
+package references, and rejects unexpected external OOXML relationships.
+[Safe-operation tests](tests/test_clean_office_candidates.py) run with
+stdlib alone; tests that actually create Office documents run only when
+the authoring libraries are present. A local disposable run produced
+all 12 candidate formats and exercised DOCX/PPTX reads plus legacy
+LibreOffice round-trips. This does **not** prove byte reproducibility
+across software versions, all existing Viewer extraction assertions,
+fixture provenance or redistribution compliance.
+
+**No replacement is installed or committed.** Existing binary fixtures,
+their [rights-pending inventory](docs/fixture-inventory.json) and
+security tests remain authoritative until full semantic regression
+checks and an explicit source/rights review permit replacements.
+See [fixture issue #1](https://github.com/OpenSourceFilms/osf-viewer/issues/1).
 
 ## Why
 
