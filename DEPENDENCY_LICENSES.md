@@ -9,11 +9,13 @@ PyPI does not independently verify whether project metadata matches the
 actual distributed licence texts. Names, versions and URLs are evidence
 for further review, not rights granted by OSF.
 
-**OSF Viewer itself currently has no root LICENSE/COPYING.** Its source
-remains publicly visible without a general reuse grant. An LGPL, GPL,
-Apache, BSD or MIT licence on a dependency grants rights to the material
-covered by that dependency, not automatically to the Viewer application.
-Owner approval is still required: https://github.com/OpenSourceFilms/osf-viewer/issues/1.
+**Original Viewer source controlled by OSF is MIT-licensed** under the
+root [LICENSE](LICENSE), subject to [LICENSING_SCOPE.md](LICENSING_SCOPE.md).
+In particular, all 12 binary Office fixtures in `tests/fixtures/` remain
+outside that grant pending independent provenance and rights verification.
+An LGPL, GPL, Apache, BSD or MIT licence on a dependency grants rights only
+to material covered by that dependency, not to other packages or fixtures.
+Outstanding fixture and ownership review: https://github.com/OpenSourceFilms/osf-viewer/issues/1.
 
 ## Publisher-declared licences by exact pinned package
 
