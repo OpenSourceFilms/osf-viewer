@@ -68,6 +68,15 @@ def main() -> int:
         print(json.dumps(provenance, indent=2, sort_keys=True), flush=True)
         if not provenance["safe_from_unreviewed_binary_components"]:
             raise SystemExit("Generated package component audit failed")
+        # The four legacy formats are OLE2/RTF, not ZIP. Inspect their
+        # container/metadata structure separately without logging raw values.
+        from scripts.audit_generated_legacy_components import audit as audit_legacy
+        legacy = audit_legacy(generated)
+        print(json.dumps(legacy, indent=2, sort_keys=True), flush=True)
+        if not legacy["pass_structural_checks"]:
+            raise SystemExit("Generated legacy Office component audit failed")
+        # These structural checks do not certify embedded legacy objects or
+        # copyright/redistribution rights.
         # The package scanner's old-fixture expectations include inherited
         # thumbnails; its scanner itself must find none in the new candidates.
         from scripts.audit_fixture_packages import scan_package, ARCHIVES
