@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+"""Full Viewer Office fixture acceptance against disposable generated candidates.
+
+Reuses the existing unmodified semantic/legacy/fallback/preview unittest
+classes by redirecting only their FIXTURES constant in this test process.
+Never writes to tests/fixtures or modifies the published fixture manifest.
+
+Requires the pinned Viewer Python libraries and LibreOffice; this is NOT a
+stdlib-only CI test or a substitute for checking redistribution rights.
+"""
+from __future__ import annotations
+
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+import unittest
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+EXPECTED = {
+    "sample.doc", "sample.docx", "sample.xls", "sample.xlsx",
+    "sample.ppt", "sample.pptx", "sample.rtf",
+    "sample.odt", "sample.ods", "sample.odp",
+    "corrupt.docx", "corrupt.xls",
+}
+CLASSES = (
+    "DocxTests", "XlsxTests", "PptxTests", "OdfTests",
+    "LegacyOfficeConversionTests", "CorruptFileFallbackTests",
+    "TruncationCapTests", "PreviewPdfCacheTests",
+)
+
+
+def main() -> int:
+    from scripts.verify_fixture_manifest import verify
+    if verify(ROOT):
+        raise SystemExit("Existing published fixture inventory failed before test")
+    with tempfile.TemporaryDirectory(prefix="osf_office_compat_") as tmp:
+        base = Path(tmp)
+        generated = base / "generated"
+        cmd = [
+            sys.executable, str(ROOT / "scripts" / "generate_clean_office_candidates.py"),
+            "--out", str(generated), "--with-legacy",
+        ]
+        subprocess.run(cmd, cwd=ROOT, check=True, timeout=240)
+        actual = {path.name for path in generated.iterdir()}
+        if actual != EXPECTED:
+            raise SystemExit(
+                "Candidate set mismatch: missing="
+                + str(sorted(EXPECTED - actual))
+                + "; extra=" + str(sorted(actual - EXPECTED))
+            )
+        # The Viewer imports cache.CACHE_DIR as a global. Redirect it before
+        # running any conversion or preview, to avoid /workspace writes.
+        import cache
+        cache.CACHE_DIR = base / "cache"
+        import office_extract
+        office_extract._LO_PROFILE_TEMPLATE = None
+        from tests import test_office_extract as original
+        original.FIXTURES = generated
+
+        # The package scanner's old-fixture expectations include inherited
+        # thumbnails; its scanner itself must find none in the new candidates.
+        from scripts.audit_fixture_packages import scan_package, ARCHIVES
+        for filename in ARCHIVES:
+            result = scan_package(generated / filename)
+            if result["issues"] or result["embedded_preview"] or result["printer_settings"] or result["custom_xml_parts"]:
+                raise SystemExit("Candidate package safety failure: " + repr(result))
+
+        suite = unittest.TestSuite(
+            unittest.defaultTestLoader.loadTestsFromTestCase(
+                getattr(original, name)
+            )
+            for name in CLASSES
+        )
+        result = unittest.TextTestRunner(verbosity=2).run(suite)
+        if verify(ROOT):
+            raise SystemExit("Existing published fixture inventory changed during tests")
+        if not result.wasSuccessful() or result.testsRun == 0:
+            return 1
+        print(
+            f"PASS: {result.testsRun} unchanged Viewer Office assertions "
+            "against 12 disposable generated candidates"
+        )
+        print("Existing rights-pending binary fixtures remain untouched.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
