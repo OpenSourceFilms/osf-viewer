@@ -12,6 +12,8 @@ on:
       - "docs/fixture-inventory.json"
       - "scripts/verify_fixture_manifest.py"
       - "scripts/generate_clean_office_candidates.py"
+      - "scripts/audit_generated_office_components.py"
+      - "tests/test_generated_office_component_audit.py"
       - "tests/test_clean_office_candidates.py"
       - "tests/test_fixture_manifest_gate.py"
       - "requirements.lock.txt"
@@ -47,6 +49,8 @@ on:
       - "docs/fixture-inventory.json"
       - "scripts/verify_fixture_manifest.py"
       - "scripts/generate_clean_office_candidates.py"
+      - "scripts/audit_generated_office_components.py"
+      - "tests/test_generated_office_component_audit.py"
       - "tests/test_clean_office_candidates.py"
       - "tests/test_fixture_manifest_gate.py"
       - "requirements.lock.txt"
@@ -96,6 +100,8 @@ jobs:
         run: python -B -m unittest discover -s tests -p "test_fixture_manifest_gate.py" -v
       - name: Verify published binary inventory against Git blob digests
         run: python -B scripts/verify_fixture_manifest.py
+      - name: Test synthetic Office component and metadata inventory
+        run: python -B -m unittest discover -s tests -p "test_generated_office_component_audit.py" -v
       - name: Test isolated synthetic Office replacement candidate generation
         run: python -B -m unittest discover -s tests -p "test_clean_office_candidates.py" -v
       - name: Check dependency licence register against all 21 locked packages

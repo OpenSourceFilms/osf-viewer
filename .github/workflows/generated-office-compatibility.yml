@@ -7,6 +7,8 @@ on:
       - ".github/workflows/generated-office-compatibility.yml"
       - "scripts/generate_clean_office_candidates.py"
       - "scripts/verify_generated_office_compatibility.py"
+      - "scripts/audit_generated_office_components.py"
+      - "tests/test_generated_office_component_audit.py"
       - "scripts/verify_fixture_manifest.py"
       - "scripts/audit_fixture_packages.py"
       - "tests/test_office_extract.py"
@@ -21,6 +23,8 @@ on:
       - ".github/workflows/generated-office-compatibility.yml"
       - "scripts/generate_clean_office_candidates.py"
       - "scripts/verify_generated_office_compatibility.py"
+      - "scripts/audit_generated_office_components.py"
+      - "tests/test_generated_office_component_audit.py"
       - "scripts/verify_fixture_manifest.py"
       - "scripts/audit_fixture_packages.py"
       - "tests/test_office_extract.py"
@@ -59,6 +63,8 @@ jobs:
           libreoffice --version
       - name: Install exact published Viewer dependencies
         run: python -m pip install --disable-pip-version-check -r requirements.lock.txt
+      - name: Test generated-component inventory rejection paths
+        run: python -B -m unittest discover -s tests -p "test_generated_office_component_audit.py" -v
       - name: Exercise all original Office assertions against candidate files
         run: python -B scripts/verify_generated_office_compatibility.py
       - name: Recheck unmodified published fixture bytes
