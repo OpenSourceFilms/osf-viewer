@@ -1,22 +1,23 @@
 # osf_viewer — universal file-viewer
 
-A read-only inspection service that guarantees every file reachable through
-Copyparty also has a predictable, machine-consumable representation — even
-when its native MIME type or binary format is unsupported by ordinary HTTP
-clients (browsers, curl, ChatGPT's URL fetcher).
+A read-only inspection service offering machine-consumable representations
+of authorised, policy-permitted files, including formats ordinary HTTP
+clients cannot display directly. Not every file reachable through Copyparty
+is necessarily accessible through Viewer: its separate denylist, permission
+and path controls remain authoritative.
 
 Binds `127.0.0.1:3930` only. Public access is exclusively through the
 Cloudflare Tunnel path rule below — there is no other way in.
 
 ## URL mapping
 
-For any file at `/workspace/path/to/file.ext`:
+For an authorised path such as `/workspace/path/to/file.ext`:
 
 | Representation | URL |
 |---|---|
 | Raw (via Copyparty, unchanged) | `https://files.opensourcefilms.org/path/to/file.ext` |
 | Viewer hub (HTML, links to all modes) | `https://files.opensourcefilms.org/__view__/path/to/file.ext` |
-| Guaranteed text | `.../__view__/path/to/file.ext/text` |
+| Text fallback | `.../__view__/path/to/file.ext/text` |
 | Visual representation (PDF) | `.../__view__/path/to/file.ext/preview.pdf` |
 | Original bytes, streamed | `.../__view__/path/to/file.ext/raw` |
 | Directory listing | `.../__view__/path/to/dir/` (and its own `/text`) |
@@ -26,10 +27,12 @@ Locally (before the Cloudflare hop): same paths under `http://127.0.0.1:3930`.
 
 ### `/text` contract
 
-Always returns `text/plain; charset=utf-8`, HTTP 200, for any file that
-exists and passes the denylist. Never a bare 500 for an existing file — a
-handler failure (corrupt DB, truncated media, unknown pickle format) falls
-back to the next rung of the degradation ladder rather than raising:
+For a permitted, readable file, the handler attempts a `text/plain;
+charset=utf-8` report through the following degradation ladder. Internal
+format-decoding failures can fall back to simpler representations. Missing,
+denied, unreadable or unavailable paths and other request failures may
+still return HTTP errors, including 403, 404, 500 or 503. There is no
+unconditional HTTP 200 guarantee:
 
 1. Exact decoded text (source files: `.py .sh .md .json .yaml .toml .log` etc.)
 2. Parsed/extracted text (PDF via `pypdf`, one page at a time)
@@ -43,11 +46,10 @@ back to the next rung of the degradation ladder rather than raising:
 7. Bounded hex dump (first/last 512 bytes) + libmagic mime/description +
    size/mtime/sha256 (or a first+last-1MB fingerprint for files >50MB)
 
-Any handler exception is caught inside `get_text()` and demoted to rung 7,
-never propagated. A corrupt or misidentified file (e.g. a DuckDB file with
-a `.db` extension, which fails the SQLite parser) still gets a full rung-7
-report rather than an error page — this has been verified against a real
-file on this volume (`melb_acquire/census.db`).
+Many supported parser errors are converted into a bounded fallback report
+by `get_text()`. The exact outcome depends on the path, access policy and
+handler conditions. Source-level fallback logic does not guarantee a
+successful request under all failures.
 
 ### `/preview.pdf` contract
 
@@ -60,8 +62,9 @@ whole-file `bytes` allocation. `HEAD` returns the native PDF's length
 without reading its contents. Extracted PDF archive members still use their
 existing bounded in-memory representation; image previews are converted
 losslessly; video gets a 6-frame
-contact sheet via `ffmpeg`. Image/video conversions are cached under
-`OSFV_CACHE_DIR`, keyed by `sha256(relpath:size:mtime)`.
+contact sheet via `ffmpeg`. Generated-preview caching also binds
+the source identity or archive-member content, as described in the
+[README](README.md); path, size and mtime alone are not trusted.
 
 ## Archive members
 

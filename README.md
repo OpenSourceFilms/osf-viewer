@@ -13,21 +13,20 @@ volume, so it survives pod rebuilds).
 **Runs on:** this RunPod pod, bound to `127.0.0.1:3930`. The only public
 entry point is a Cloudflare Tunnel path rule in front of it — see `DOCS.md`.
 
-## Source availability and reuse status
+## Licence and reuse status
 
-**Publicly viewable does not currently mean open-source licensed.** This repository
-does not yet contain a repository-wide `LICENSE` or `COPYING` file. OSF is
-reviewing code authorship, third-party notices, and an appropriate reuse
-licence in [issue #1](https://github.com/OpenSourceFilms/osf-viewer/issues/1).
-Until an authorised licence is published, **do not assume that the MIT licence
-used by other OSF repositories applies here**, or that public visibility grants
-permission to redistribute, modify and republish this source outside the
-rights supplied by GitHub's terms and applicable law.
+**MIT for OSF-controlled original code**, as recorded in [LICENSE](LICENSE).
+The precise scope and exclusions are in
+[LICENSING_SCOPE.md](LICENSING_SCOPE.md). In particular, the 12 Office
+fixtures in `tests/fixtures/` have unresolved provenance and are **not
+granted under OSF's MIT licence**. Copyright and redistribution rights
+for embedded artwork and the older binary files are still unverified.
+Third-party packages and other external components retain their own terms.
 
-This notice does not change the copyright ownership of any contribution, does
-not impose a new licence, and does not grant additional rights. The paths,
-tunnel rules and startup assumptions below describe an OSF-specific service,
-not a public deployment guarantee.
+This source grant does not license files inspected by the running Viewer
+and does not establish a supported public deployment configuration.
+The applicable fixture and remaining ownership questions are tracked
+in [issue #1](https://github.com/OpenSourceFilms/osf-viewer/issues/1).
 
 ## Third-party Python dependencies
 
