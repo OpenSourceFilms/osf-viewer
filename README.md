@@ -124,8 +124,14 @@ fixture provenance or redistribution compliance.
 
 **No replacement is installed or committed.** Existing binary fixtures,
 their [rights-pending inventory](docs/fixture-inventory.json) and
-security tests remain authoritative until full semantic regression
-checks and an explicit source/rights review permit replacements.
+security tests remain authoritative. All 26 existing Viewer Office
+semantic tests passed against disposable generated candidates, but source
+templates and legacy conversions still require rights review. The
+[generated component provenance report](docs/GENERATED_OFFICE_COMPONENT_PROVENANCE.md)
+and [component audit](scripts/audit_generated_office_components.py)
+record inherited formatting and fail on newly introduced binary media
+or external relationships. These safeguards do not grant redistribution
+rights over old fixtures or independently owned template parts.
 See [fixture issue #1](https://github.com/OpenSourceFilms/osf-viewer/issues/1).
 
 ## Why
