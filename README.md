@@ -1,9 +1,11 @@
 # osf_viewer — universal file-viewer
 
-A read-only inspection service that guarantees every file on the `/workspace`
-network volume has a predictable, machine-consumable representation — even
-when its native MIME type or binary format is unsupported by ordinary HTTP
-clients (browsers, curl, ChatGPT's URL fetcher).
+A read-only inspection service providing machine-consumable representations
+of **authorised, policy-permitted** files on the `/workspace` network volume,
+including formats that ordinary HTTP clients cannot display directly.
+Access is constrained by the denylist, filesystem permissions and path
+validation; this service does **not** expose every file under `/workspace`
+or guarantee success for every request.
 
 **Install root:** `/workspace/services/osf_viewer` (on the shared network
 volume, so it survives pod rebuilds).
@@ -90,14 +92,15 @@ before public redistribution.
 
 ## Why
 
-Copyparty serves files on this volume as raw bytes. That's fine for a video
-or a PDF, but useless for a `.pyc`, a SQLite database, a truncated video, or
-anything a browser or an LLM's URL fetcher can't natively render. This
-service sits alongside Copyparty and gives every one of those files a
-degradation ladder instead of a dead end: exact text where possible, falling
-back through extracted text, structured metadata, an archive listing,
-strings, and finally a bounded hex dump — so a request for `/text` on any
-existing file is guaranteed `200 text/plain`, never a bare error.
+Copyparty serves permitted files on this volume as raw bytes. That works
+for media a client can decode, but not for all binary or unsupported formats.
+This service sits alongside Copyparty and offers a best-effort degradation
+ladder for authorised paths: exact text where possible, then extracted text,
+structured metadata, archive listings, strings, and a bounded hex dump.
+A permitted, readable file may therefore have a useful `/text` representation
+when its original format is unsupported. Denied, missing, unreadable or
+unavailable paths can still return HTTP errors. A fallback representation
+is not an access-control bypass or a guarantee of HTTP 200.
 
 ## Quick reference
 
@@ -105,7 +108,7 @@ existing file is guaranteed `200 text/plain`, never a bare error.
 |---|---|
 | Raw (via Copyparty, unchanged) | `https://files.opensourcefilms.org/path/to/file.ext` |
 | Viewer hub | `https://files.opensourcefilms.org/__view__/path/to/file.ext` |
-| Guaranteed text | `.../__view__/path/to/file.ext/text` |
+| Text fallback | `.../__view__/path/to/file.ext/text` |
 | Visual (PDF) | `.../__view__/path/to/file.ext/preview.pdf` |
 | Health check | `https://files.opensourcefilms.org/__view_health__` |
 
