@@ -15,6 +15,7 @@ import sys
 
 NAMES = ("sample.doc", "sample.xls", "sample.ppt", "sample.rtf")
 MAX_FILE_BYTES = 8 * 1024 * 1024
+MAX_MEDIA_INSPECTION_BYTES = 4 * 1024 * 1024
 OLE_MAGIC = bytes.fromhex("d0cf11e0a1b11ae1")
 HARD_OLE_PARTS = re.compile(
     r"(?:^|/)(?:vba|macros|_vba_project_cur|ole10native|"
@@ -51,6 +52,7 @@ def _base(file: Path, kind: str) -> dict:
         "sha256": None,
         "bytes": None,
         "component_count": None,
+        "possible_media_streams": [],
         "metadata_fields_present": [],
         "informational_flags": [],
         "findings": [],
@@ -96,9 +98,38 @@ def inspect_ole(file: Path) -> dict:
                 if HARD_OLE_PARTS.search(name):
                     result["findings"].append("embedded_or_macro_container")
                 if POSSIBLE_MEDIA.search(name):
-                    result["informational_flags"].append(
-                        "possible_media_stream_needs_content_review"
-                    )
+                    # Directory names alone cannot distinguish an empty PPT
+                    # Pictures stream from an embedded image payload.
+                    try:
+                        if ole.get_type(part) != olefile.STGTY_STREAM:
+                            result["informational_flags"].append(
+                                "possible_media_storage_needs_manual_review"
+                            )
+                            continue
+                        size = ole.get_size(part)
+                        if size < 0 or size > MAX_MEDIA_INSPECTION_BYTES:
+                            result["findings"].append(
+                                "media_stream_size_uninspectable"
+                            )
+                            continue
+                        data = ole.openstream(part).read(size + 1)
+                        if len(data) != size:
+                            result["findings"].append(
+                                "media_stream_size_mismatch"
+                            )
+                            continue
+                        result["possible_media_streams"].append({
+                            "name": name,
+                            "bytes": size,
+                            "sha256": hashlib.sha256(data).hexdigest()
+                            if size else None,
+                        })
+                        result["informational_flags"].append(
+                            "nonempty_media_stream_needs_content_review"
+                            if size else "empty_media_stream"
+                        )
+                    except (OSError, ValueError, IndexError, TypeError):
+                        result["findings"].append("unreadable_media_stream")
             # OLE property-stream values may contain external/user metadata.
             # Record the *fields*, never their values in public CI output.
             try:
