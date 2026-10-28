@@ -11,7 +11,11 @@ notices where applicable.
 
 - **All 12 binary Office and corrupted-document fixtures in
   `tests/fixtures/`**. Their hashes and unresolved rights are recorded in
-  [docs/fixture-inventory.json](docs/fixture-inventory.json). Some ZIP-based
+  [docs/fixture-inventory.json](docs/fixture-inventory.json).
+  The [file-by-file replacement decision](docs/FIXTURE_REPLACEMENT_DECISION.md)
+  and [machine-readable register](docs/fixture-replacement-assessment.json)
+  retain an explicit NOT APPROVED state for all twelve and document the
+  residual Git-history publication issue. Some ZIP-based
   Office fixtures contain generated thumbnails, printer settings or custom
   XML; legacy binary fixtures are not fully inspected. No OSF MIT grant or
   permission to redistribute these files is asserted.
