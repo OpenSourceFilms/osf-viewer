@@ -111,6 +111,12 @@ LibreOffice process with an isolated user profile. Those tools'
 source-package templates and their upstream obligations are **not**
 relicensed or independently cleared by the generator.
 
+The [installed-template byte audit](scripts/audit_generated_template_inheritance.py)
+now identifies exact DOCX/PPTX ZIP members inherited from the default
+upstream templates. The full CI evidence JSON records those matches and
+source-template hashes without uploading Office binaries. Retaining
+upstream MIT notices does not clear the historical 12 published fixtures.
+
 The generator deliberately removes default DOCX/PPTX template
 thumbnails, custom XML and printer-settings parts, including associated
 package references, and rejects unexpected external OOXML relationships.

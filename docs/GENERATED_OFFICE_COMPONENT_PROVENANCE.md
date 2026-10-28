@@ -95,6 +95,35 @@ published fixture blobs and inventory remain untouched.
 Complete chain-of-title and upstream notices for concrete replacement files
 are still pending.
 
+## Installed default-template inheritance comparison
+
+The [template byte-inheritance audit](../scripts/audit_generated_template_inheritance.py)
+compares each disposable generated DOCX and PPTX against the **actual default
+template installed with that CI job's authoring library**. It records
+template/candidate SHA-256 and classifies ZIP entries as exactly identical,
+same-name modified, source-only or generated-only. Exact matching entry
+hashes and sizes are retained, but **no template contents or user document
+data** are uploaded. Fail-closed synthetic tests cover unsafe/duplicate
+ZIP entries, symlinked input and oversized members.
+
+An isolated recreation with the pinned authoring versions identified five
+byte-identical default-template members in each generated document:
+
+| Candidate | Identical inherited members |
+|---|---|
+| DOCX | `docProps/app.xml`, `word/fontTable.xml`, `word/stylesWithEffects.xml`, `word/theme/theme1.xml`, `word/webSettings.xml` |
+| PPTX | `docProps/app.xml`, `ppt/presProps.xml`, `ppt/tableStyles.xml`, `ppt/theme/theme1.xml`, `ppt/viewProps.xml` |
+
+The DOCX `word/stylesWithEffects.xml` is particularly substantial.
+Other same-name parts can still be modified derivatives; hash inequality
+is **not** proof they were independently authored. The CI report remains
+authoritative for its own run and toolchain version.
+
+The upstream MIT notice texts are retained in
+[the proposed fixture notices](GENERATED_OFFICE_NOTICES.md).
+This inspection establishes evidence of copied bytes; it does not establish
+separate authorship, licence transfer or worldwide redistribution clearance.
+
 ## Exact-file evidence and upstream notices
 
 The [prospective upstream notices](GENERATED_OFFICE_NOTICES.md) contain full

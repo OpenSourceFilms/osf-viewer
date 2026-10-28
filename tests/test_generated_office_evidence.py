@@ -42,6 +42,27 @@ class CandidateEvidenceTests(unittest.TestCase):
             "safe_from_unreviewed_binary_components": True,
             "packages": [{"file": name, "findings": []} for name in sorted(ZIPS)],
         }
+        self.template_audit = {
+            "scope": "disposable_generated_docx_pptx",
+            "template_content_copyright_cleared": False,
+            "candidates": [
+                {
+                    "candidate": name,
+                    "candidate_sha256": hashlib.sha256(
+                        (self.folder / name).read_bytes()
+                    ).hexdigest(),
+                    "source_dependency": dep,
+                    "source_template_sha256": "a" * 64,
+                    "inherited_template_rights_cleared": False,
+                    "byte_identical_parts": [],
+                    "byte_identical_part_count": 0,
+                }
+                for name, dep in (
+                    ("sample.docx", "python-docx"),
+                    ("sample.pptx", "python-pptx"),
+                )
+            ],
+        }
         self.legacy_audit = {
             "pass_structural_checks": True,
             "results": [
@@ -60,6 +81,7 @@ class CandidateEvidenceTests(unittest.TestCase):
             self.folder, tool_versions=VERSIONS,
             package_report=self.zip_audit,
             legacy_report=self.legacy_audit,
+            template_report=self.template_audit,
             checkout_sha="d" * 40,
         )
 
@@ -78,6 +100,7 @@ class CandidateEvidenceTests(unittest.TestCase):
         self.assertFalse(record["original_published_fixture_bytes_replaced"])
         self.assertEqual(record["dependencies"]["openpyxl"], "3.1.5")
         self.assertEqual(record["checkout_git_sha"], "d" * 40)
+        self.assertEqual(len(record["template_inheritance_audit"]["candidates"]), 2)
 
     def test_rejects_extra_missing_and_symlinked_files(self):
         (self.folder / "extra.txt").write_text("unexpected")
@@ -117,6 +140,21 @@ class CandidateEvidenceTests(unittest.TestCase):
                 self.make()
         finally:
             VERSIONS["odfpy"] = old
+
+    def test_rejects_unverified_or_mismatched_template_evidence(self):
+        self.template_audit["candidates"][0]["candidate_sha256"] = "b" * 64
+        with self.assertRaises(ValueError):
+            self.make()
+        self.template_audit["candidates"][0]["candidate_sha256"] = hashlib.sha256(
+            (self.folder / "sample.docx").read_bytes()
+        ).hexdigest()
+        self.template_audit["template_content_copyright_cleared"] = True
+        with self.assertRaises(ValueError):
+            self.make()
+        self.template_audit["template_content_copyright_cleared"] = False
+        self.template_audit["candidates"].pop()
+        with self.assertRaises(ValueError):
+            self.make()
 
     def test_publication_writes_once_outside_repository(self):
         data = self.make()
