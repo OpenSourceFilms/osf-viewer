@@ -28,6 +28,21 @@ by this repository. Review the exact installed LibreOffice release's bundled
 licences and any relevant output metadata before distributing derivatives.
 The CI record retains the concrete version string.
 
+## Exact inherited-template bytes
+
+The [template comparison script](../scripts/audit_generated_template_inheritance.py)
+identifies DOCX/PPTX members copied byte-for-byte from the installed default
+templates, including Word styles and Office themes. The evidence is linked
+to exact template and generated-candidate SHA-256 hashes in each CI
+provenance record. Modified same-name members may also derive from those
+templates and should not be presumed independently authored.
+
+Preserve the upstream MIT notices below alongside any binary distribution
+that contains substantial original template material. These notices
+document a prospective redistribution basis, not a new OSF ownership
+claim over the copied formatting. The historical 12 fixtures remain
+excluded and unverified.
+
 ## Original python-docx and python-pptx licence notice
 
 Both pinned source projects include the following MIT licence text with the
