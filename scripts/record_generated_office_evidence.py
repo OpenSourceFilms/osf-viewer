@@ -65,12 +65,12 @@ def make_record(folder: Path, *, tool_versions: dict[str, str],
         raise ValueError("OLE2/RTF audit has not passed")
     package_rows = package_report.get("packages", [])
     legacy_rows = legacy_report.get("results", [])
-    if ({x.get("file") for x in package_rows} != {
+    if (len(package_rows) != 6 or {x.get("file") for x in package_rows} != {
         "sample.docx", "sample.xlsx", "sample.pptx",
         "sample.odt", "sample.ods", "sample.odp",
     } or any(x.get("findings") for x in package_rows)):
         raise ValueError("Incomplete or failed ZIP component evidence")
-    if ({x.get("file") for x in legacy_rows} != {
+    if (len(legacy_rows) != 4 or {x.get("file") for x in legacy_rows} != {
         "sample.doc", "sample.xls", "sample.ppt", "sample.rtf",
     } or any(x.get("findings") for x in legacy_rows)):
         raise ValueError("Incomplete or failed legacy component evidence")
@@ -92,6 +92,9 @@ def make_record(folder: Path, *, tool_versions: dict[str, str],
         if len(data) != nbytes:
             raise ValueError(f"Candidate mutated while being read: {filename}")
         digest = hashlib.sha256(data).hexdigest()
+        prior = next((x for x in legacy_rows if x.get("file") == filename), None)
+        if prior is not None and prior.get("sha256") != digest:
+            raise ValueError(f"Legacy audit and evidence hash disagree: {filename}")
         rows.append({
             "filename": filename,
             "bytes": nbytes,
@@ -120,7 +123,10 @@ def make_record(folder: Path, *, tool_versions: dict[str, str],
 
 def publish_record(path: Path, record: dict, *, repo_root: Path) -> None:
     """Refuse to overwrite anything, especially within the checked-out repo."""
-    path, root = Path(path).resolve(), Path(repo_root).resolve()
+    raw_path = Path(path)
+    if raw_path.is_symlink():
+        raise ValueError("Refuse symlink evidence target")
+    path, root = raw_path.resolve(), Path(repo_root).resolve()
     if path == root or root in path.parents:
         raise ValueError("Cannot publish candidate evidence inside source tree")
     if not path.parent.is_dir():
