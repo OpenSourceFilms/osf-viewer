@@ -10,6 +10,7 @@ stdlib-only CI test or a substitute for checking redistribution rights.
 """
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import tempfile
@@ -94,8 +95,21 @@ def main() -> int:
         result = unittest.TextTestRunner(verbosity=2).run(suite)
         if verify(ROOT):
             raise SystemExit("Existing published fixture inventory changed during tests")
-        if not result.wasSuccessful() or result.testsRun == 0:
+        if not result.wasSuccessful() or result.testsRun != 26:
             return 1
+        from scripts.record_generated_office_evidence import build, publish_record
+        evidence = build(
+            generated, provenance, legacy, checkout_sha=os.environ.get("GITHUB_SHA")
+        )
+        destination = os.environ.get("OSF_OFFICE_EVIDENCE_PATH")
+        if destination:
+            publish_record(Path(destination), evidence, repo_root=ROOT)
+            print("Published provenance record for all 12 disposable candidates.")
+        else:
+            print(
+                "Generated and validated 12 SHA-256 candidate records "
+                "(no output path requested)."
+            )
         print(
             f"PASS: {result.testsRun} unchanged Viewer Office assertions "
             "against 12 disposable generated candidates"

@@ -7,6 +7,10 @@ on:
       - ".github/workflows/generated-office-compatibility.yml"
       - "scripts/generate_clean_office_candidates.py"
       - "scripts/verify_generated_office_compatibility.py"
+      - "scripts/record_generated_office_evidence.py"
+      - "tests/test_generated_office_evidence.py"
+      - "docs/GENERATED_OFFICE_NOTICES.md"
+      - "docs/third_party/APACHE-2.0-odfpy.txt"
       - "scripts/audit_generated_office_components.py"
       - "scripts/audit_generated_legacy_components.py"
       - "tests/test_generated_legacy_component_audit.py"
@@ -25,6 +29,10 @@ on:
       - ".github/workflows/generated-office-compatibility.yml"
       - "scripts/generate_clean_office_candidates.py"
       - "scripts/verify_generated_office_compatibility.py"
+      - "scripts/record_generated_office_evidence.py"
+      - "tests/test_generated_office_evidence.py"
+      - "docs/GENERATED_OFFICE_NOTICES.md"
+      - "docs/third_party/APACHE-2.0-odfpy.txt"
       - "scripts/audit_generated_office_components.py"
       - "scripts/audit_generated_legacy_components.py"
       - "tests/test_generated_legacy_component_audit.py"
@@ -73,7 +81,18 @@ jobs:
         run: python -B -m unittest discover -s tests -p "test_generated_legacy_component_audit.py" -v
       - name: Test generated-component inventory rejection paths
         run: python -B -m unittest discover -s tests -p "test_generated_office_component_audit.py" -v
+      - name: Verify exact-file provenance record invariants
+        run: python -B -m unittest discover -s tests -p "test_generated_office_evidence.py" -v
       - name: Exercise all original Office assertions against candidate files
+        env:
+          OSF_OFFICE_EVIDENCE_PATH: ${{ runner.temp }}/viewer-office-evidence.json
         run: python -B scripts/verify_generated_office_compatibility.py
+      - name: Retain JSON evidence only, never generated Office binaries
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: viewer-office-evidence
+          path: ${{ runner.temp }}/viewer-office-evidence.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Recheck unmodified published fixture bytes
         run: python -B scripts/verify_fixture_manifest.py

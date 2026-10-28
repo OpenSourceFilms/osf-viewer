@@ -95,6 +95,30 @@ published fixture blobs and inventory remain untouched.
 Complete chain-of-title and upstream notices for concrete replacement files
 are still pending.
 
+## Exact-file evidence and upstream notices
+
+The [prospective upstream notices](GENERATED_OFFICE_NOTICES.md) contain full
+MIT licence notices for the relevant document authoring packages, the
+odfpy Apache-2.0 reference licence text, and the separate audit-only
+olefile/PIL terms. These notices are **pre-release material**, not a
+rights assignment or clearance of old binary fixtures.
+
+The [per-run provenance recorder](../scripts/record_generated_office_evidence.py)
+is executed after the existing 26 semantic regressions and the ZIP and
+OLE2/RTF structural checks succeed. It rejects missing/extra/symlinked
+candidate files, records the exact SHA-256 and byte size for all 12
+disposable outputs, the installed versions of the authoring/conversion
+tools, the GitHub checkout SHA when available, and the bounded package
+audit reports. It never archives the generated Office binaries. The
+GitHub Actions job uploads a **JSON-only** evidence artifact retained
+for 14 days. A different run may produce different file hashes.
+
+The artifact explicitly declares `copyright_and_redistribution_cleared:
+false`. Preserving exact-file provenance enables separate review; it
+does not itself authorize publishing replacement binaries. Source
+templates, legacy opaque streams and upstream licence notices still
+require release-specific acceptance.
+
 ## Remaining release gate
 
 1. Preserve upstream notices in a rights file accompanying **any** new
