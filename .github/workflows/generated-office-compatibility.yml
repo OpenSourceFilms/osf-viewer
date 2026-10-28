@@ -8,6 +8,8 @@ on:
       - "scripts/generate_clean_office_candidates.py"
       - "scripts/verify_generated_office_compatibility.py"
       - "scripts/record_generated_office_evidence.py"
+      - "scripts/audit_generated_template_inheritance.py"
+      - "tests/test_generated_template_inheritance.py"
       - "tests/test_generated_office_evidence.py"
       - "docs/GENERATED_OFFICE_NOTICES.md"
       - "docs/third_party/APACHE-2.0-odfpy.txt"
@@ -30,6 +32,8 @@ on:
       - "scripts/generate_clean_office_candidates.py"
       - "scripts/verify_generated_office_compatibility.py"
       - "scripts/record_generated_office_evidence.py"
+      - "scripts/audit_generated_template_inheritance.py"
+      - "tests/test_generated_template_inheritance.py"
       - "tests/test_generated_office_evidence.py"
       - "docs/GENERATED_OFFICE_NOTICES.md"
       - "docs/third_party/APACHE-2.0-odfpy.txt"
@@ -81,6 +85,8 @@ jobs:
         run: python -B -m unittest discover -s tests -p "test_generated_legacy_component_audit.py" -v
       - name: Test generated-component inventory rejection paths
         run: python -B -m unittest discover -s tests -p "test_generated_office_component_audit.py" -v
+      - name: Verify template ZIP inheritance and archive safeguards
+        run: python -B -m unittest discover -s tests -p "test_generated_template_inheritance.py" -v
       - name: Verify exact-file provenance record invariants
         run: python -B -m unittest discover -s tests -p "test_generated_office_evidence.py" -v
       - name: Exercise all original Office assertions against candidate files
