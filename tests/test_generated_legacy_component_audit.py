@@ -130,7 +130,7 @@ class LegacyAuditTests(unittest.TestCase):
                 return io.BytesIO(b"")
 
         file = self.root / "sample.ppt"
-        file.write_bytes(OLE_MAGIC + b"\\0" * 64)
+        file.write_bytes(OLE_MAGIC + b"\0" * 64)
         stub = types.SimpleNamespace(
             OleFileIO=EmptyPictureOle, DEFECT_INCORRECT=1, STGTY_STREAM=2
         )
@@ -158,7 +158,7 @@ class LegacyAuditTests(unittest.TestCase):
                 return io.BytesIO(content)
 
         file = self.root / "sample.ppt"
-        file.write_bytes(OLE_MAGIC + b"\\0" * 64)
+        file.write_bytes(OLE_MAGIC + b"\0" * 64)
         stub = types.SimpleNamespace(
             OleFileIO=NonemptyPictureOle, DEFECT_INCORRECT=1, STGTY_STREAM=2
         )
