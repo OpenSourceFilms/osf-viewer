@@ -22,6 +22,10 @@ on:
       - "tests/test_office_extract.py"
       - "tests/fixtures/**"
       - "docs/fixture-inventory.json"
+      - "docs/fixture-replacement-assessment.json"
+      - "docs/FIXTURE_REPLACEMENT_DECISION.md"
+      - "scripts/verify_fixture_replacement_assessment.py"
+      - "tests/test_fixture_replacement_assessment.py"
       - "office_extract.py"
       - "inspectors.py"
       - "cache.py"
@@ -46,6 +50,10 @@ on:
       - "tests/test_office_extract.py"
       - "tests/fixtures/**"
       - "docs/fixture-inventory.json"
+      - "docs/fixture-replacement-assessment.json"
+      - "docs/FIXTURE_REPLACEMENT_DECISION.md"
+      - "scripts/verify_fixture_replacement_assessment.py"
+      - "tests/test_fixture_replacement_assessment.py"
       - "office_extract.py"
       - "inspectors.py"
       - "cache.py"
@@ -83,6 +91,10 @@ jobs:
         run: python -m pip install --disable-pip-version-check --no-deps "olefile==0.47"
       - name: Test legacy OLE2 and RTF fail-closed checks
         run: python -B -m unittest discover -s tests -p "test_generated_legacy_component_audit.py" -v
+      - name: Fail closed on unresolved fixture replacement and Git history rights
+        run: |
+          python -B scripts/verify_fixture_replacement_assessment.py
+          python -B -m unittest discover -s tests -p "test_fixture_replacement_assessment.py" -v
       - name: Test generated-component inventory rejection paths
         run: python -B -m unittest discover -s tests -p "test_generated_office_component_audit.py" -v
       - name: Verify template ZIP inheritance and archive safeguards
