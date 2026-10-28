@@ -69,6 +69,11 @@ def main() -> int:
         print(json.dumps(provenance, indent=2, sort_keys=True), flush=True)
         if not provenance["safe_from_unreviewed_binary_components"]:
             raise SystemExit("Generated package component audit failed")
+        # Independently record exactly which OOXML ZIP members match the
+        # installed upstream default templates. Keep hashes, never payloads.
+        from scripts.audit_generated_template_inheritance import audit as template_audit
+        inherited = template_audit(generated)
+        print(json.dumps(inherited, indent=2, sort_keys=True), flush=True)
         # The four legacy formats are OLE2/RTF, not ZIP. Inspect their
         # container/metadata structure separately without logging raw values.
         from scripts.audit_generated_legacy_components import audit as audit_legacy
@@ -99,7 +104,8 @@ def main() -> int:
             return 1
         from scripts.record_generated_office_evidence import build, publish_record
         evidence = build(
-            generated, provenance, legacy, checkout_sha=os.environ.get("GITHUB_SHA")
+            generated, provenance, legacy, inherited,
+            checkout_sha=os.environ.get("GITHUB_SHA")
         )
         destination = os.environ.get("OSF_OFFICE_EVIDENCE_PATH")
         if destination:
