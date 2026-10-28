@@ -8,6 +8,8 @@ on:
       - "scripts/generate_clean_office_candidates.py"
       - "scripts/verify_generated_office_compatibility.py"
       - "scripts/audit_generated_office_components.py"
+      - "scripts/audit_generated_legacy_components.py"
+      - "tests/test_generated_legacy_component_audit.py"
       - "tests/test_generated_office_component_audit.py"
       - "scripts/verify_fixture_manifest.py"
       - "scripts/audit_fixture_packages.py"
@@ -24,6 +26,8 @@ on:
       - "scripts/generate_clean_office_candidates.py"
       - "scripts/verify_generated_office_compatibility.py"
       - "scripts/audit_generated_office_components.py"
+      - "scripts/audit_generated_legacy_components.py"
+      - "tests/test_generated_legacy_component_audit.py"
       - "tests/test_generated_office_component_audit.py"
       - "scripts/verify_fixture_manifest.py"
       - "scripts/audit_fixture_packages.py"
@@ -63,6 +67,10 @@ jobs:
           libreoffice --version
       - name: Install exact published Viewer dependencies
         run: python -m pip install --disable-pip-version-check -r requirements.lock.txt
+      - name: Install audit-only OLE2 reader
+        run: python -m pip install --disable-pip-version-check --no-deps "olefile==0.47"
+      - name: Test legacy OLE2 and RTF fail-closed checks
+        run: python -B -m unittest discover -s tests -p "test_generated_legacy_component_audit.py" -v
       - name: Test generated-component inventory rejection paths
         run: python -B -m unittest discover -s tests -p "test_generated_office_component_audit.py" -v
       - name: Exercise all original Office assertions against candidate files

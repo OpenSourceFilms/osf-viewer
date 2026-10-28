@@ -56,12 +56,49 @@ This is a provenance inventory, not legal advice or a determination that
 every generated file is cleared. A generation tool's licence does not
 automatically confer a blanket copyright assignment over its output.
 
+## Legacy OLE2/RTF candidate component audit
+
+The [generated legacy component scanner](../scripts/audit_generated_legacy_components.py)
+inspects only disposable `sample.doc`, `sample.xls`, `sample.ppt`
+and `sample.rtf` candidates. It rejects missing/symlinked files,
+unexpected OLE2 signatures, illegible OLE2 directories, named macro/
+embedded-object storages, RTF embedded image/object controls, external
+field instructions and selected private-path/email patterns. It limits
+input sizes and emits SHA-256 hashes, OLE2 directory counts and metadata
+**field names** without printing raw creator/company/property values.
+
+OLE2 stream enumeration and property inspection use the separately installed
+audit-only [olefile 0.47](https://pypi.org/project/olefile/0.47/) package
+(BSD-style licence and inherited PIL notice). It is **not** added to the
+Viewer application's 21-pin runtime dependencies. The CI dependency is
+pinned to `olefile==0.47`; its licences are not being granted by OSF.
+
+A successful structural report **does not** exclude pictures embedded
+inside opaque Word/Excel/PowerPoint document streams, prove absence of
+all hidden OLE records, or identify ownership of a converter's output.
+OLE2 `Pictures`-like streams are informational warnings requiring separate
+content review. The RTF scanner checks known control words rather than
+performing a full RTF parse. A report may also identify inherited
+creator/template metadata and historical timestamps: these are recorded
+as **attribution and review prompts**, not scrubbed or declared private
+simply because the date is old.
+
+The [original extraction compatibility runner](../scripts/verify_generated_office_compatibility.py)
+now requires both the ZIP-based and legacy-container reports to pass before
+running the unchanged 26-function Office regression suite. Existing
+published fixture blobs and inventory remain untouched.
+
+**Do not interpret `pass_structural_checks` as copyright clearance.**
+Complete chain-of-title and upstream notices for concrete replacement files
+are still pending.
+
 ## Remaining release gate
 
 1. Preserve upstream notices in a rights file accompanying **any** new
    distribution that includes meaningful reused template/style/master content.
-2. Independently inspect all four legacy binary formats' embedded components
-   and author/converter metadata.
+2. Review legacy OLE2/RTF audit results, including opaque document
+   streams, known source-template attribution and converter metadata; this
+   machine audit alone does not establish embedded-content ownership.
 3. For every replacement, retain the source generator, exact authoring and
    conversion versions, file hashes and passing original regression output.
 4. Review generated files and notices before changing the twelve tracked
