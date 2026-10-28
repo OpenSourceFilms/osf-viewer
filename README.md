@@ -127,7 +127,8 @@ their [rights-pending inventory](docs/fixture-inventory.json) and
 security tests remain authoritative. All 26 existing Viewer Office
 semantic tests passed against disposable generated candidates, but source
 templates and legacy conversions still require rights review. The
-[generated component provenance report](docs/GENERATED_OFFICE_COMPONENT_PROVENANCE.md)
+[generated component provenance report](docs/GENERATED_OFFICE_COMPONENT_PROVENANCE.md),
+[pre-release upstream notices](docs/GENERATED_OFFICE_NOTICES.md)
 and [ZIP component audit](scripts/audit_generated_office_components.py)
 record inherited formatting and fail on newly introduced binary media
 or external relationships. A separate
