@@ -51,6 +51,7 @@ def _tool_versions() -> dict[str, str]:
 
 def make_record(folder: Path, *, tool_versions: dict[str, str],
                 package_report: dict, legacy_report: dict,
+                template_report: dict,
                 checkout_sha: str | None = None) -> dict:
     """Fail closed if the exact candidate set or its audit gates differ."""
     folder = Path(folder)
@@ -74,6 +75,24 @@ def make_record(folder: Path, *, tool_versions: dict[str, str],
         "sample.doc", "sample.xls", "sample.ppt", "sample.rtf",
     } or any(x.get("findings") for x in legacy_rows)):
         raise ValueError("Incomplete or failed legacy component evidence")
+    if (template_report.get("scope") != "disposable_generated_docx_pptx"
+            or template_report.get("template_content_copyright_cleared") is not False):
+        raise ValueError("Missing or incorrectly cleared template comparison")
+    inheritance = template_report.get("candidates")
+    if (not isinstance(inheritance, list) or len(inheritance) != 2
+            or {x.get("candidate") for x in inheritance}
+            != {"sample.docx", "sample.pptx"}):
+        raise ValueError("Incomplete template inheritance evidence")
+    if any(
+        x.get("inherited_template_rights_cleared") is not False
+        or x.get("source_dependency") not in ("python-docx", "python-pptx")
+        or not isinstance(x.get("source_template_sha256"), str)
+        or len(x["source_template_sha256"]) != 64
+        or not isinstance(x.get("byte_identical_parts"), list)
+        or x.get("byte_identical_part_count") != len(x["byte_identical_parts"])
+        for x in inheritance
+    ):
+        raise ValueError("Incomplete or untrusted template inheritance detail")
     if any(
         name not in tool_versions or not isinstance(tool_versions[name], str)
         or not tool_versions[name].strip()
@@ -95,6 +114,9 @@ def make_record(folder: Path, *, tool_versions: dict[str, str],
         prior = next((x for x in legacy_rows if x.get("file") == filename), None)
         if prior is not None and prior.get("sha256") != digest:
             raise ValueError(f"Legacy audit and evidence hash disagree: {filename}")
+        template = next((x for x in inheritance if x["candidate"] == filename), None)
+        if template is not None and template.get("candidate_sha256") != digest:
+            raise ValueError(f"Template audit and evidence hash disagree: {filename}")
         rows.append({
             "filename": filename,
             "bytes": nbytes,
@@ -112,6 +134,7 @@ def make_record(folder: Path, *, tool_versions: dict[str, str],
         "dependencies": dict(sorted(tool_versions.items())),
         "zip_component_audit": package_report,
         "legacy_component_audit": legacy_report,
+        "template_inheritance_audit": template_report,
         "semantic_assertions": "existing_26_regressions_must_pass_before_publication",
         "source": "scripts/generate_clean_office_candidates.py",
         "notice_reference": "docs/GENERATED_OFFICE_NOTICES.md",
@@ -140,9 +163,9 @@ def publish_record(path: Path, record: dict, *, repo_root: Path) -> None:
 
 
 def build(folder: Path, package_report: dict, legacy_report: dict,
-          *, checkout_sha: str | None = None) -> dict:
+          template_report: dict, *, checkout_sha: str | None = None) -> dict:
     return make_record(
         folder, tool_versions=_tool_versions(),
         package_report=package_report, legacy_report=legacy_report,
-        checkout_sha=checkout_sha,
+        template_report=template_report, checkout_sha=checkout_sha,
     )
