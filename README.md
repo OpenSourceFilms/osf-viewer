@@ -128,10 +128,15 @@ security tests remain authoritative. All 26 existing Viewer Office
 semantic tests passed against disposable generated candidates, but source
 templates and legacy conversions still require rights review. The
 [generated component provenance report](docs/GENERATED_OFFICE_COMPONENT_PROVENANCE.md)
-and [component audit](scripts/audit_generated_office_components.py)
+and [ZIP component audit](scripts/audit_generated_office_components.py)
 record inherited formatting and fail on newly introduced binary media
-or external relationships. These safeguards do not grant redistribution
-rights over old fixtures or independently owned template parts.
+or external relationships. A separate
+[legacy OLE2/RTF audit](scripts/audit_generated_legacy_components.py)
+inspects converter-generated DOC/XLS/PPT/RTF for named object/macro
+storages, RTF embedded-content controls and metadata fields; opaque
+Office streams still need additional provenance review. These safeguards
+do not grant redistribution rights over old fixtures or independently
+owned template parts.
 See [fixture issue #1](https://github.com/OpenSourceFilms/osf-viewer/issues/1).
 
 ## Why
