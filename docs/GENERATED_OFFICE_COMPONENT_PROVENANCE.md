@@ -76,9 +76,12 @@ pinned to `olefile==0.47`; its licences are not being granted by OSF.
 A successful structural report **does not** exclude pictures embedded
 inside opaque Word/Excel/PowerPoint document streams, prove absence of
 all hidden OLE records, or identify ownership of a converter's output.
-OLE2 `Pictures`-like streams are informational warnings requiring separate
-content review. The RTF scanner checks known control words rather than
-performing a full RTF parse. A report may also identify inherited
+OLE2 `Pictures`-like streams now receive a bounded stream-size check.
+An **empty** stream is reported as such; a nonempty stream is reported with
+length and SHA-256 hash only, never raw contents, and remains explicitly flagged
+for image/content review. This is a limited payload probe, **not** a complete
+parser for all binary image or embedded-object formats. The RTF scanner checks
+known control words rather than performing a full RTF parse. A report may also identify inherited
 creator/template metadata and historical timestamps: these are recorded
 as **attribution and review prompts**, not scrubbed or declared private
 simply because the date is old.

@@ -1,6 +1,8 @@
 """Offline legacy OLE/RTF candidate-audit tests. Never opens real fixtures."""
 from __future__ import annotations
 
+import hashlib
+import io
 import json
 from pathlib import Path
 import runpy
@@ -112,6 +114,66 @@ class LegacyAuditTests(unittest.TestCase):
         with mock.patch.dict(sys.modules, {"olefile": stub}):
             result = scan_ole(path)
         self.assertIn("embedded_or_macro_container", result["findings"])
+
+    def test_empty_picture_stream_is_measured_not_assumed_to_be_media(self):
+        class EmptyPictureOle(FakeOle):
+            def listdir(self, streams, storages):
+                return [["PowerPoint Document"], ["Pictures"]]
+
+            def get_type(self, name):
+                return 2  # olefile.STGTY_STREAM
+
+            def get_size(self, name):
+                return 0
+
+            def openstream(self, name):
+                return io.BytesIO(b"")
+
+        file = self.root / "sample.ppt"
+        file.write_bytes(OLE_MAGIC + b"\0" * 64)
+        stub = types.SimpleNamespace(
+            OleFileIO=EmptyPictureOle, DEFECT_INCORRECT=1, STGTY_STREAM=2
+        )
+        with mock.patch.dict(sys.modules, {"olefile": stub}):
+            result = scan_ole(file)
+        self.assertEqual(result["findings"], [])
+        self.assertEqual(result["possible_media_streams"], [
+            {"name": "pictures", "bytes": 0, "sha256": None}
+        ])
+        self.assertIn("empty_media_stream", result["informational_flags"])
+
+    def test_nonempty_picture_stream_records_size_and_hash_not_content(self):
+        content = b"private opaque image payload"
+        class NonemptyPictureOle(FakeOle):
+            def listdir(self, streams, storages):
+                return [["Pictures"]]
+
+            def get_type(self, name):
+                return 2
+
+            def get_size(self, name):
+                return len(content)
+
+            def openstream(self, name):
+                return io.BytesIO(content)
+
+        file = self.root / "sample.ppt"
+        file.write_bytes(OLE_MAGIC + b"\0" * 64)
+        stub = types.SimpleNamespace(
+            OleFileIO=NonemptyPictureOle, DEFECT_INCORRECT=1, STGTY_STREAM=2
+        )
+        with mock.patch.dict(sys.modules, {"olefile": stub}):
+            result = scan_ole(file)
+        self.assertEqual(result["findings"], [])
+        self.assertEqual(result["possible_media_streams"], [{
+            "name": "pictures", "bytes": len(content),
+            "sha256": hashlib.sha256(content).hexdigest(),
+        }])
+        self.assertIn(
+            "nonempty_media_stream_needs_content_review",
+            result["informational_flags"],
+        )
+        self.assertNotIn(content.decode(), json.dumps(result))
 
     def test_directory_audit_requires_all_four_files(self):
         report = audit(self.root)
